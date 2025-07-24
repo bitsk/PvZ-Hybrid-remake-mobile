@@ -1,0 +1,246 @@
+name: Godot Multi-Platform Build & Export
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+env:
+  GODOT_VERSION: 4.0.2
+  APP_NAME: "植物大战僵尸杂交版"
+
+jobs:
+
+  # 1. 下载导出模板（示例只示范linux x86_64/arm64和iOS几个，Android可同理）
+  download-export-templates:
+    runs-on: ubuntu-latest
+    outputs:
+      linux_x86_64_artifact: export-templates-linux-x86_64.zip
+      linux_arm64_artifact: export-templates-linux-arm64.zip
+      ios_artifact: export-templates-ios.zip
+    steps:
+      - name: Download Linux x86_64 Export Template
+        run: |
+          wget -O export-templates-linux-x86_64.tpz https://downloads.tuxfamily.org/godotengine/${{ env.GODOT_VERSION }}/Godot_v${{ env.GODOT_VERSION }}-stable_linux_x86_64_export_templates.tpz
+          zip -r export-templates-linux-x86_64.zip export-templates-linux-x86_64.tpz
+      
+      - name: Download Linux arm64 Export Template
+        run: |
+          wget -O export-templates-linux-arm64.tpz https://downloads.tuxfamily.org/godotengine/${{ env.GODOT_VERSION }}/Godot_v${{ env.GODOT_VERSION }}-stable_linux_arm64_export_templates.tpz
+          zip -r export-templates-linux-arm64.zip export-templates-linux-arm64.tpz
+      
+      - name: Download iOS Export Template
+        run: |
+          wget -O export-templates-ios.tpz https://downloads.tuxfamily.org/godotengine/${{ env.GODOT_VERSION }}/Godot_v${{ env.GODOT_VERSION }}-stable_ios_export_templates.tpz
+          zip -r export-templates-ios.zip export-templates-ios.tpz
+
+      - name: Upload Export Templates Linux x86_64
+        uses: actions/upload-artifact@v3
+        with:
+          name: export-templates-linux-x86_64
+          path: export-templates-linux-x86_64.zip
+
+      - name: Upload Export Templates Linux arm64
+        uses: actions/upload-artifact@v3
+        with:
+          name: export-templates-linux-arm64
+          path: export-templates-linux-arm64.zip
+
+      - name: Upload Export Templates iOS
+        uses: actions/upload-artifact@v3
+        with:
+          name: export-templates-ios
+          path: export-templates-ios.zip
+
+
+  # 2. 准备Godot项目工程：解压ZIP，找到PCK，使用gdsdecomp还原项目
+  prepare-godot-project:
+    runs-on: ubuntu-latest
+    needs: download-export-templates
+    outputs:
+      godot_project_artifact: godot-project.zip
+      pck_file_path: ${{ steps.find_pck.outputs.pck_path }}
+      version: ${{ steps.set_version.outputs.version }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Find Release ZIP and Extract Version Number
+        id: set_version
+        run: |
+          ZIP_FILE=$(ls 植物大战僵尸杂交版*v*发布版.zip | head -n1)
+          echo "zip_file=$ZIP_FILE" >> $GITHUB_OUTPUT
+          VER=$(echo "$ZIP_FILE" | grep -Po 'v[\d.]+')
+          echo "version=$VER" >> $GITHUB_OUTPUT
+
+      - name: Unzip release ZIP
+        run: |
+          unzip -q "${{ steps.set_version.outputs.zip_file }}" -d extracted
+
+      - name: Find PCK file path
+        id: find_pck
+        run: |
+          PCK_PATH=$(find extracted -name "*.pck" | head -n1)
+          if [ -z "$PCK_PATH" ]; then
+            echo "No .pck file found!"
+            exit 1
+          fi
+          echo "pck_path=$PCK_PATH" >> $GITHUB_OUTPUT
+
+      - name: Clone gdsdecomp for PCK decompilation
+        run: |
+          git clone https://github.com/GDRETools/gdsdecomp.git
+
+      - name: Decompile .pck to Godot project
+        run: |
+          python3 gdsdecomp/gdsdecomp.py "${{ steps.find_pck.outputs.pck_path }}" godot_project
+
+      - name: Zip godot project folder
+        run: zip -r godot-project.zip godot_project
+
+      - name: Upload Godot Project artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: godot-project
+          path: godot-project.zip
+
+
+  # 3. Linux导出任务 示例只基于 linux_x86_64 模板和 pck 打包
+  export-linux:
+    runs-on: ubuntu-latest
+    needs:
+      - download-export-templates
+      - prepare-godot-project
+    steps:
+      - name: Download Linux x86_64 Export Template artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: export-templates-linux-x86_64
+          path: ./export_templates
+
+      - name: Unzip Export Template
+        run: unzip ./export_templates/export-templates-linux-x86_64.zip -d ./export_templates
+
+      - name: Copy export template binary
+        run: |
+          # 根据具体导出模板内文件结构调整路径，示例假设linux_x86_64_release二进制文件路径为：
+          cp ./export_templates/export_templates/linux_x11_64_release ./game-x86_64
+
+      - name: Copy PCK file
+        run: |
+          cp ${{ needs.prepare-godot-project.outputs.pck_file_path }} ./game.pck
+
+      - name: Combine template and PCK into zip package
+        run: zip -j "${{ env.APP_NAME }}_linux_${{ needs.prepare-godot-project.outputs.version }}.zip" game-x86_64 game.pck
+
+      - name: Upload Linux build artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: linux-build
+          path: ${{ env.APP_NAME }}_linux_*.zip
+
+  # 4. Android 导出任务 示例，使用反编译工程，需根据实际环境配置签名等参数
+  export-android:
+    runs-on: ubuntu-latest
+    needs:
+      - download-export-templates
+      - prepare-godot-project
+    steps:
+      - name: Setup Java & Android SDK
+        uses: android-actions/setup-android@v2
+
+      - name: Download Export Templates Android (示例需要添加相应下载Job)
+        uses: actions/download-artifact@v3
+        with:
+          name: export-templates-android
+          path: ./export_templates_android
+
+      - name: Download Godot project artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: godot-project
+          path: ./godot_project.zip
+
+      - name: Unzip Godot project
+        run: unzip godot_project.zip -d ./godot_project
+
+      - name: Godot Android Export
+        run: |
+          godot --path ./godot_project --export "Android" exported.apk
+
+      - name: Upload Android artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: android-build
+          path: exported.apk
+
+
+  # 5. iOS 导出任务 示例，同样使用完整Godot项目
+  export-ios:
+    runs-on: macos-latest
+    needs:
+      - download-export-templates
+      - prepare-godot-project
+    steps:
+      - name: Download Export Templates iOS artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: export-templates-ios
+          path: ./export_templates_ios
+
+      - name: Unzip Export Template
+        run: unzip ./export_templates_ios/export-templates-ios.zip -d ./export_templates_ios
+
+      - name: Download Godot project artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: godot-project
+          path: ./godot_project.zip
+
+      - name: Unzip Godot project
+        run: unzip godot_project.zip -d ./godot_project
+
+      - name: Setup Godot iOS Export (请根据实际需求调整)
+        uses: dulvui/godot4-ios-export@v1
+        with:
+          godot-version: ${{ env.GODOT_VERSION }}
+
+      - name: Godot iOS Export
+        run: godot --path ./godot_project --export "iOS" exported.xcodeproj
+
+      - name: Upload iOS Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ios-build
+          path: exported.xcodeproj
+
+  # 6. macOS 导出任务 示例，直接模板+PCK方式打包
+  export-macos:
+    runs-on: macos-latest
+    needs:
+      - download-export-templates
+      - prepare-godot-project
+    steps:
+      - name: Download MacOS Export Template artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: export-templates-macos
+          path: ./export_templates_macos
+
+      - name: Unzip MacOS Export Template
+        run: unzip ./export_templates_macos/export-templates-macos.zip -d ./export_templates_macos
+
+      - name: Copy executable and PCK
+        run: |
+          cp ./export_templates_macos/export_templates/macos_release "./${{ env.APP_NAME }}.app"
+          cp ${{ needs.prepare-godot-project.outputs.pck_file_path }} .
+
+      - name: Zip macOS package
+        run: zip -r "${{ env.APP_NAME }}_macos_${{ needs.prepare-godot-project.outputs.version }}.zip" "${{ env.APP_NAME }}.app" *.pck
+
+      - name: Upload macOS artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: macos-build
+          path: ${{ env.APP_NAME }}_macos_*.zip
