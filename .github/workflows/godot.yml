@@ -9,6 +9,7 @@ on:
 env:
   GODOT_VERSION: 4.4.1
   APP_NAME: "植物大战僵尸杂交版"
+  APP_VER: "0.3"
 
 jobs:
 
@@ -24,36 +25,29 @@ jobs:
         run: |
           wget -q https://github.com/godotengine/godot/releases/download/4.4.1-stable/Godot_v${{ env.GODOT_VERSION }}-stable_export_templates.tpz
           unzip Godot_v${{ env.GODOT_VERSION }}-stable_export_templates.tpz
-          mkdir templates && cd Godot_v${{ env.GODOT_VERSION }}-stable_export_templates
-          cp version.txt ../templates
-          cp linux_release.arm64 ../templates
-          cp linux_release.x86_64 ../templates
-                 
-      - name: Upload Export Templates Linux x86_64
+          mv Godot_v${{ env.GODOT_VERSION }}-stable_export_templates/templates . && rm Godot_v${{ env.GODOT_VERSION }}-stable_export_templates* -rf
+          pushd templates && rm windows* linux_debug* && popd
+    
+      - name: Upload Android artifact
         uses: actions/upload-artifact@v4
         with:
           name: export-templates
-          path: ./templates
-
+          path: templates/
+                 
   # 2. 准备Godot项目工程：解压ZIP，找到PCK，使用gdsdecomp还原项目
   prepare-godot-project:
     runs-on: ubuntu-latest
-    needs: download-export-templates
     outputs:
       godot_project_artifact: godot-project.zip
       pck_file_path: ${{ steps.find_pck.outputs.pck_path }}
       version: ${{ steps.set_version.outputs.version }}
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-
-      - name: Find Release ZIP and Extract Version Number
+      - name: Download Release ZIP and Extract Version Number
         id: set_version
         run: |
-          ZIP_FILE=$(ls 植物大战僵尸杂交版*v*发布版.zip | head -n1)
-          VER=$(echo "$ZIP_FILE" | grep -Po 'v[\d.]+')
-          echo "version=$VER" >> $GITHUB_OUTPUT
-          unzip -q "$ZIP_FILE" -d extracted
+          wget -q https://github.com/kero990/PvZ-Hybrid-remake-mobile/releases/download/v0.3/v0.3.zip
+          unzip -q 0.3.zip -d extracted
+          mv extracted/*/* extracted/
           rm extracted/*.exe
           PCK_PATH=$(find extracted -name "*.pck" | head -n1)
           if [ -z "$PCK_PATH" ]; then
@@ -65,15 +59,21 @@ jobs:
       - name: Clone gdsdecomp for PCK decompilation
         run: |
           wget -q https://github.com/GDRETools/gdsdecomp/releases/download/v1.0.0-rc.3/GDRE_tools-v1.0.0-rc.3-linux.zip
-          unzip GDRE_tools-v1.0.0-rc.3-linux.zip -d gdre
+          unzip GDRE_tools-v1.0.0-rc.3-linux.zip
+          mv GDRE_tools-v1.0.0-rc.3-linux gdre
           gdre/gdre_tools.x86_64 --headless --recover={{ steps.find_pck.outputs.pck_path }} --output pvz-project
-
-      - name: Upload Godot Project artifact
+          
+      - name: Upload Android artifact
         uses: actions/upload-artifact@v4
         with:
           name: pvz-project
-          path: ./pvz-project
-
+          path: pvz-project/
+          
+      - name: Upload Android artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pck-file
+          path: $PCK_PATH
 
   # 3. Linux导出任务 示例只基于 linux_x86_64 模板和 pck 打包
   export-linux:
@@ -82,15 +82,36 @@ jobs:
       - download-export-templates
       - prepare-godot-project
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        
       - name: Download Linux x86_64 Export Template artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
-          name: export-templates-linux-x86_64
+          name: export-templates
           path: ./export_templates
 
       - name: Unzip Export Template
-        run: unzip ./export_templates/export-templates-linux-x86_64.zip -d ./export_templates
+        run: unzip ./export_templates/export-templates -d ./export_templates
+        
+      - name: Download pck-file
+        uses: actions/download-artifact@v4
+        with:
+          name: pck-file
+          path: ./pckfile
 
+      - name: pre deb file
+        run: |
+          mkdir -p deb_x86_64/DEBIAN
+          mkdir -p deb_x86_64/opt/apps/com.pvzhe.hybrid-remake/files
+          mkdir -p deb_x86_64/opt/apps/com.pvzhe.hybrid-remake/entries/applications
+          mkdir -p deb_x86_64/opt/apps/com.pvzhe.hybrid-remake/entries/icons/hicolor/128x128/apps
+          PCK_PATH=$(find pckfile -name "*.pck" | head -n1)
+          cp $PCK_PATH deb_x86_64/opt/apps/com.pvzhe.hybrid-remake/files
+          cp 
+    
+      
+      
       - name: Copy export template binary
         run: |
           # 根据具体导出模板内文件结构调整路径，示例假设linux_x86_64_release二进制文件路径为：
@@ -104,7 +125,7 @@ jobs:
         run: zip -j "${{ env.APP_NAME }}_linux_${{ needs.prepare-godot-project.outputs.version }}.zip" game-x86_64 game.pck
 
       - name: Upload Linux build artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: linux-build
           path: ${{ env.APP_NAME }}_linux_*.zip
