@@ -61,7 +61,7 @@ jobs:
           wget -q https://github.com/GDRETools/gdsdecomp/releases/download/v1.0.0-rc.3/GDRE_tools-v1.0.0-rc.3-linux.zip
           unzip GDRE_tools-v1.0.0-rc.3-linux.zip
           mv GDRE_tools-v1.0.0-rc.3-linux gdre
-          gdre/gdre_tools.x86_64 --headless --recover={{ steps.find_pck.outputs.pck_path }} --output pvz-project
+          gdre/gdre_tools.x86_64 --headless --recover={{ steps.find_pck.outputs.pck_path }} --output=pvz-project
           
       - name: Upload Android artifact
         uses: actions/upload-artifact@v4
@@ -81,18 +81,20 @@ jobs:
     needs:
       - download-export-templates
       - prepare-godot-project
+    container:
+      image: debian:10
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
         
-      - name: Download Linux x86_64 Export Template artifact
+      - name: Download Export Template artifact
         uses: actions/download-artifact@v4
         with:
           name: export-templates
           path: ./export_templates
 
       - name: Unzip Export Template
-        run: unzip ./export_templates/export-templates -d ./export_templates
+        run: unzip ./export_templates/export-templates.zip -d ./export_templates
         
       - name: Download pck-file
         uses: actions/download-artifact@v4
@@ -102,34 +104,45 @@ jobs:
 
       - name: pre deb file
         run: |
-          mkdir -p deb_x86_64/DEBIAN
-          mkdir -p deb_x86_64/opt/apps/com.pvzhe.hybrid-remake/files
-          mkdir -p deb_x86_64/opt/apps/com.pvzhe.hybrid-remake/entries/applications
-          mkdir -p deb_x86_64/opt/apps/com.pvzhe.hybrid-remake/entries/icons/hicolor/128x128/apps
+          # 打包x86_64 deb
+          mkdir -p deb/DEBIAN
+          mkdir -p deb/opt/apps/com.pvzhe.hybrid-remake/files
+          mkdir -p deb/opt/apps/com.pvzhe.hybrid-remake/entries/applications
+          mkdir -p deb/opt/apps/com.pvzhe.hybrid-remake/entries/icons/hicolor/128x128/apps
+          sed -i s@VERSION@$APP_VER@G assets/control
+          sed -i s@amd64@ARCH@g assets/info
+          sed -i s@VERSION@$APP_VER@G assets/info
+          sed -i s@amd64@ARCH@g assets/control
+          chmod +x assets/run.sh
+          echo './linux_release.arm64 --main-pack 植物大战僵尸杂交版v0.3发布版.pck $@' >> assets/run.sh
           PCK_PATH=$(find pckfile -name "*.pck" | head -n1)
-          cp $PCK_PATH deb_x86_64/opt/apps/com.pvzhe.hybrid-remake/files
-          cp 
-    
-      
-      
-      - name: Copy export template binary
-        run: |
-          # 根据具体导出模板内文件结构调整路径，示例假设linux_x86_64_release二进制文件路径为：
-          cp ./export_templates/export_templates/linux_x11_64_release ./game-x86_64
-
-      - name: Copy PCK file
-        run: |
-          cp ${{ needs.prepare-godot-project.outputs.pck_file_path }} ./game.pck
-
-      - name: Combine template and PCK into zip package
-        run: zip -j "${{ env.APP_NAME }}_linux_${{ needs.prepare-godot-project.outputs.version }}.zip" game-x86_64 game.pck
-
-      - name: Upload Linux build artifact
-        uses: actions/upload-artifact@v4
+          cp $PCK_PATH deb/opt/apps/com.pvzhe.hybrid-remake/files
+          cp assets/run.sh deb/opt/apps/com.pvzhe.hybrid-remake/files
+          cp ./export_templates/templates/linux_release.x86_64 deb/opt/apps/com.pvzhe.hybrid-remake/files
+          cp assets/com.pvzhe.hybrid-remake.png deb/opt/apps/com.pvzhe.hybrid-remake/entries/icons/hicolor/128x128/apps
+          cp assets/control deb/DEBIAN
+          cp assets/com.pvzhe.hybrid-remake.desktop deb/opt/apps/com.pvzhe.hybrid-remake/entries/applications
+          cp assets/info deb/opt/apps/com.pvzhe.hybrid-remake
+          dpkg-deb -b deb/
+          mv deb.deb com.pvzhe.hybrid-remake_0.3_amd64.deb
+          
+          # 打包arm64 deb
+          sed -i s@arm64@amd64@g deb/opt/apps/com.pvzhe.hybrid-remake/info
+          sed -i s@arm64@amd64@g deb/DEBIAN/control
+          rm deb/opt/apps/com.pvzhe.hybrid-remake/files/linux_release.x86_64
+          cp ./export_templates/templates/linux_release.arm64 deb/opt/apps/com.pvzhe.hybrid-remake/files
+          sed -i s@x86_64@arm64@g deb/opt/apps/com.pvzhe.hybrid-remake/files/run.sh
+          dpkg-deb -b deb/
+          mv deb.deb com.pvzhe.hybrid-remake_0.3_arm64.deb
+          
+      - name: Upload Linux build to Release
+        uses: softprops/action-gh-release@v1
         with:
-          name: linux-build
-          path: ${{ env.APP_NAME }}_linux_*.zip
-
+          files: *.deb # 指定要上传的文件
+          tag_name: v$APP_VER 
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}    
+        
   # 4. Android 导出任务 示例，使用反编译工程，需根据实际环境配置签名等参数
   export-android:
     runs-on: ubuntu-latest
