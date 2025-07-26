@@ -163,11 +163,11 @@ jobs:
 
       - name: Unzip Export Template
         run: |
-          find . -name "*.zip"
+          find . -name "*.zip" && ls
           sed -i.bak 's/deb.debian.org/archive.debian.org/g' /etc/apt/sources.list
           apt update && apt install unzip wget curl git make dpkg -y
-          unzip ./export-templates.zip -d ./export_templates
-          unzip ./pck-file.zip -d pck-file
+#          unzip ./export-templates.zip -d ./export_templates
+#          unzip ./pck-file.zip -d pck-file
         
       - name: pre deb file
         run: |
@@ -185,7 +185,7 @@ jobs:
           PCK_PATH=$(find pck-file -name "*.pck" | head -n1)
           cp $PCK_PATH deb/opt/apps/com.pvzhe.hybrid-remake/files
           cp assets/run.sh deb/opt/apps/com.pvzhe.hybrid-remake/files
-          cp ./export_templates/templates/linux_release.x86_64 deb/opt/apps/com.pvzhe.hybrid-remake/files
+          cp ./templates/linux_release.x86_64 deb/opt/apps/com.pvzhe.hybrid-remake/files
           cp assets/com.pvzhe.hybrid-remake.png deb/opt/apps/com.pvzhe.hybrid-remake/entries/icons/hicolor/128x128/apps
           cp assets/control deb/DEBIAN
           cp assets/com.pvzhe.hybrid-remake.desktop deb/opt/apps/com.pvzhe.hybrid-remake/entries/applications
@@ -197,7 +197,7 @@ jobs:
           sed -i s@arm64@amd64@g deb/opt/apps/com.pvzhe.hybrid-remake/info
           sed -i s@arm64@amd64@g deb/DEBIAN/control
           rm deb/opt/apps/com.pvzhe.hybrid-remake/files/linux_release.x86_64
-          cp ./export_templates/templates/linux_release.arm64 deb/opt/apps/com.pvzhe.hybrid-remake/files
+          cp ./templates/linux_release.arm64 deb/opt/apps/com.pvzhe.hybrid-remake/files
           sed -i s@x86_64@arm64@g deb/opt/apps/com.pvzhe.hybrid-remake/files/run.sh
           dpkg-deb -b deb/
           mv deb.deb com.pvzhe.hybrid-remake_0.3_arm64.deb
@@ -225,10 +225,6 @@ jobs:
         with:
           name: pvz-project
           path: ./pvz-project.zip
-
-      - name: Unzip Godot project
-        run: |
-          unzip pvz_project.zip -d ./pvz_project
         
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -261,9 +257,6 @@ jobs:
           name: pvz-project
           path: ./pvz-project.zip
 
-      - name: Unzip Godot project
-        run: unzip pvz-project.zip -d ./pvz-project
-
       - name: Setup Godot iOS Export (请根据实际需求调整)
         uses: dulvui/godot4-ios-export@v1
         with:
@@ -291,12 +284,9 @@ jobs:
           name: export-templates
           path: ./export_templates.zip
 
-      - name: Unzip MacOS Export Template
-        run: unzip ./export-templates.zip -d ./export_templates
-
       - name: Copy executable and PCK
         run: |
-          cp ./export_templates/templates/macos_release "./${{ env.APP_NAME }}.app"
+          cp ./templates/macos_release "./${{ env.APP_NAME }}.app"
           cp ${{ needs.prepare-godot-project.outputs.pck_file_path }} .
 
       - name: Zip macOS package
