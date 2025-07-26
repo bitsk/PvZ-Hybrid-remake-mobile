@@ -39,7 +39,6 @@ jobs:
       version: ${{ steps.set_version.outputs.version }}
     steps:
       - name: Download Release ZIP and Extract Version Number
-        id: set_version
         run: |
           wget -q https://github.com/kero990/PvZ-Hybrid-remake-mobile/releases/download/v0.3/v0.3.zip
           unzip -q v0.3.zip -d extracted
@@ -50,6 +49,7 @@ jobs:
             echo "No .pck file found!"
             exit 1
           fi
+          ls extracted/ && echo "pck_path=$PCK_PATH"
           echo "pck_path=$PCK_PATH" >> $GITHUB_OUTPUT
           echo "pck_path=$PCK_PATH" >> $GITHUB_ENV
 
