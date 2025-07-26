@@ -57,7 +57,7 @@ jobs:
         run: |
           set -x
           wget -q https://github.com/GDRETools/gdsdecomp/releases/download/v1.0.0/GDRE_tools-v1.0.0-linux.zip
-          unzip GDRE_tools-v1.0.0-rc.3-linux.zip -d gdre
+          unzip GDRE_tools-v1.0.0-linux.zip -d gdre
           chmod +x gdre/gdre_tools.x86_64
           gdre/gdre_tools.x86_64 --headless --recover=$PCK_PATH --output=pvz-project
           
