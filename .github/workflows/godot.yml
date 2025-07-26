@@ -222,7 +222,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: export-templates
-          path: ./export_templates_android
+          path: ./export_template
 
       - name: Download Godot project artifact
         uses: actions/download-artifact@v4
@@ -232,10 +232,17 @@ jobs:
 
       - name: Unzip Godot project
         run: unzip pvz_project.zip -d ./pvz_project
-
+        
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
       - name: Godot Android Export
         run: |
-          godot --path ./godot_project --export "Android" exported.apk
+          wget -q https://github.com/godotengine/godot/releases/download/$GODOT_VERSION-stable/Godot_v$GODOT_VERSION-stable_linux.x86_64.zip
+          unzip Godot_v$GODOT_VERSION-stable_linux.x86_64.zip -d godot
+          chmod +x godot/Godot_v$GODOT_VERSION-stable_linux.x86_64
+          cp assets/android/export_presets.cfg godot_project
+          godot/Godot_v$GODOT_VERSION-stable_linux.x86_64 --path ./godot_project --export "Android" exported.apk
 
       - name: Upload Android artifact
         uses: actions/upload-artifact@v4
@@ -254,11 +261,11 @@ jobs:
       - name: Download Export Templates iOS artifact
         uses: actions/download-artifact@v4
         with:
-          name: export-templates-ios
+          name: export-templates
           path: ./export_template
 
       - name: Unzip Export Template
-        run: unzip ./export_templates_ios/export-templates-ios.zip -d ./export_templates_ios
+        run: unzip ./export_templates_ios/export-templates.zip -d ./export_templates
 
       - name: Download Godot project artifact
         uses: actions/download-artifact@v4
@@ -293,15 +300,15 @@ jobs:
       - name: Download MacOS Export Template artifact
         uses: actions/download-artifact@v4
         with:
-          name: export-templates-macos
+          name: export-templates
           path: ./export_templates
 
       - name: Unzip MacOS Export Template
-        run: unzip ./export_templates_macos/export-templates-macos.zip -d ./export_templates_macos
+        run: unzip ./export_templates_macos/export-templates.zip -d ./export_templates
 
       - name: Copy executable and PCK
         run: |
-          cp ./export_templates_macos/export_templates/macos_release "./${{ env.APP_NAME }}.app"
+          cp ./export_templates/export_templates/macos_release "./${{ env.APP_NAME }}.app"
           cp ${{ needs.prepare-godot-project.outputs.pck_file_path }} .
 
       - name: Zip macOS package
