@@ -3,7 +3,7 @@ name: Godot Multi-Platform Build & Export
 on:
   workflow_dispatch:
 env:
-  GODOT_VERSION: 4.4.1
+  GODOT_VERSION: 4.4.0
   APP_NAME: "植物大战僵尸杂交版"
   APP_VER: "0.3"
 
@@ -19,7 +19,7 @@ jobs:
     steps:
       - name: Download Export Template
         run: |
-          wget -q https://github.com/godotengine/godot/releases/download/4.4.1-stable/Godot_v${{ env.GODOT_VERSION }}-stable_export_templates.tpz
+          wget -q https://github.com/godotengine/godot/releases/download/${{ env.GODOT_VERSION }}-stable/Godot_v${{ env.GODOT_VERSION }}-stable_export_templates.tpz
           unzip Godot_v${{ env.GODOT_VERSION }}-stable_export_templates.tpz
           mv Godot_v${{ env.GODOT_VERSION }}-stable_export_templates/templates . && rm Godot_v${{ env.GODOT_VERSION }}-stable_export_templates* -rf
           pushd templates && rm windows* linux_debug* && popd
@@ -153,20 +153,21 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: export-templates
-          path: ./export_templates
+          path: ./export_templates.zip
+          
+      - name: Download pck-file
+        uses: actions/download-artifact@v4
+        with:
+          name: pck-file
+          path: ./pck-file.zip
 
       - name: Unzip Export Template
         run: |
           sed -i.bak 's/deb.debian.org/archive.debian.org/g' /etc/apt/sources.list
           apt update && apt install unzip wget curl git make dpkg -y
-          unzip ./export_templates/export-templates.zip -d ./export_templates
+          unzip ./export-templates.zip -d ./export_templates
+          unzip ./pck-file.zip -d pck-file
         
-      - name: Download pck-file
-        uses: actions/download-artifact@v4
-        with:
-          name: pck-file
-          path: ./pckfile
-
       - name: pre deb file
         run: |
           # 打包x86_64 deb
@@ -180,7 +181,7 @@ jobs:
           sed -i s@amd64@ARCH@g assets/control
           chmod +x assets/run.sh
           echo './linux_release.arm64 --main-pack 植物大战僵尸杂交版v0.3发布版.pck $@' >> assets/run.sh
-          PCK_PATH=$(find pckfile -name "*.pck" | head -n1)
+          PCK_PATH=$(find pck-file -name "*.pck" | head -n1)
           cp $PCK_PATH deb/opt/apps/com.pvzhe.hybrid-remake/files
           cp assets/run.sh deb/opt/apps/com.pvzhe.hybrid-remake/files
           cp ./export_templates/templates/linux_release.x86_64 deb/opt/apps/com.pvzhe.hybrid-remake/files
@@ -218,31 +219,26 @@ jobs:
       - name: Setup Java & Android SDK
         uses: android-actions/setup-android@v2
 
-      - name: Download Export Templates Android (示例需要添加相应下载Job)
-        uses: actions/download-artifact@v4
-        with:
-          name: export-templates
-          path: ./export_template
-
       - name: Download Godot project artifact
         uses: actions/download-artifact@v4
         with:
-          name: godot-project
-          path: ./godot_project.zip
+          name: pvz-project
+          path: ./pvz-project.zip
 
       - name: Unzip Godot project
-        run: unzip pvz_project.zip -d ./pvz_project
+        run: |
+          unzip pvz_project.zip -d ./pvz_project
         
       - name: Checkout repository
         uses: actions/checkout@v4
         
       - name: Godot Android Export
         run: |
-          wget -q https://github.com/godotengine/godot/releases/download/$GODOT_VERSION-stable/Godot_v$GODOT_VERSION-stable_linux.x86_64.zip
-          unzip Godot_v$GODOT_VERSION-stable_linux.x86_64.zip -d godot
+          wget -q https://github.com/godotengine/godot/releases/download/${{ env.GODOT_VERSION }}-stable/Godot_v${{ env.GODOT_VERSION }}-stable_linux.x86_64.zip
+          unzip Godot_v${{ env.GODOT_VERSION }}-stable_linux.x86_64.zip -d godot
           chmod +x godot/Godot_v$GODOT_VERSION-stable_linux.x86_64
           cp assets/android/export_presets.cfg godot_project
-          godot/Godot_v$GODOT_VERSION-stable_linux.x86_64 --path ./godot_project --export "Android" exported.apk
+          godot/Godot_v${{ env.GODOT_VERSION }}-stable_linux.x86_64 --path ./godot_project --export "Android" exported.apk
 
       - name: Upload Android artifact
         uses: actions/upload-artifact@v4
@@ -258,23 +254,14 @@ jobs:
       - download-export-templates
       - prepare-godot-project
     steps:
-      - name: Download Export Templates iOS artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: export-templates
-          path: ./export_template
-
-      - name: Unzip Export Template
-        run: unzip ./export_templates_ios/export-templates.zip -d ./export_templates
-
       - name: Download Godot project artifact
         uses: actions/download-artifact@v4
         with:
-          name: godot-project
-          path: ./godot_project.zip
+          name: pvz-project
+          path: ./pvz-project.zip
 
       - name: Unzip Godot project
-        run: unzip godot_project.zip -d ./godot_project
+        run: unzip pvz-project.zip -d ./pvz-project
 
       - name: Setup Godot iOS Export (请根据实际需求调整)
         uses: dulvui/godot4-ios-export@v1
@@ -301,14 +288,14 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: export-templates
-          path: ./export_templates
+          path: ./export_templates.zip
 
       - name: Unzip MacOS Export Template
-        run: unzip ./export_templates_macos/export-templates.zip -d ./export_templates
+        run: unzip ./export-templates.zip -d ./export_templates
 
       - name: Copy executable and PCK
         run: |
-          cp ./export_templates/export_templates/macos_release "./${{ env.APP_NAME }}.app"
+          cp ./export_templates/templates/macos_release "./${{ env.APP_NAME }}.app"
           cp ${{ needs.prepare-godot-project.outputs.pck_file_path }} .
 
       - name: Zip macOS package
