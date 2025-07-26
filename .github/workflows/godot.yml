@@ -56,6 +56,7 @@ jobs:
         run: |
           wget -q https://github.com/GDRETools/gdsdecomp/releases/download/v1.0.0-rc.3/GDRE_tools-v1.0.0-rc.3-linux.zip
           unzip GDRE_tools-v1.0.0-rc.3-linux.zip -d gdre
+          chmod +x gdre/gdre_tools.x86_64
           gdre/gdre_tools.x86_64 --headless --recover={{ steps.find_pck.outputs.pck_path }} --output=pvz-project
           
       - name: Upload Android artifact
