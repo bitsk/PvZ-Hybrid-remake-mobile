@@ -2,10 +2,6 @@ name: Godot Multi-Platform Build & Export
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
-
 env:
   GODOT_VERSION: 4.4.1
   APP_NAME: "植物大战僵尸杂交版"
