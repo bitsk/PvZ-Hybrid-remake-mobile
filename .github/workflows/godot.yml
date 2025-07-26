@@ -42,7 +42,7 @@ jobs:
         id: set_version
         run: |
           wget -q https://github.com/kero990/PvZ-Hybrid-remake-mobile/releases/download/v0.3/v0.3.zip
-          unzip -q 0.3.zip -d extracted
+          unzip -q v0.3.zip -d extracted
           mv extracted/*/* extracted/
           rm extracted/*.exe
           PCK_PATH=$(find extracted -name "*.pck" | head -n1)
