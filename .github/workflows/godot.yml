@@ -51,6 +51,7 @@ jobs:
             exit 1
           fi
           echo "pck_path=$PCK_PATH" >> $GITHUB_OUTPUT
+          echo "pck_path=$PCK_PATH" >> $GITHUB_ENV
 
       - name: Clone gdsdecomp for PCK decompilation
         run: |
@@ -92,7 +93,7 @@ jobs:
       - name: Unzip Export Template
         run: |
           sed -i.bak 's/deb.debian.org/archive.debian.org/g' /etc/apt/sources.list
-          apt update && apt install unzip wget curl git make dpkg
+          apt update && apt install unzip wget curl git make dpkg -y
           unzip ./export_templates/export-templates.zip -d ./export_templates
         
       - name: Download pck-file
@@ -155,7 +156,7 @@ jobs:
       - name: Download Export Templates Android (示例需要添加相应下载Job)
         uses: actions/download-artifact@v4
         with:
-          name: export-templates-android
+          name: export-templates
           path: ./export_templates_android
 
       - name: Download Godot project artifact
@@ -189,7 +190,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: export-templates-ios
-          path: ./export_templates_ios
+          path: ./export_template
 
       - name: Unzip Export Template
         run: unzip ./export_templates_ios/export-templates-ios.zip -d ./export_templates_ios
@@ -228,7 +229,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: export-templates-macos
-          path: ./export_templates_macos
+          path: ./export_templates
 
       - name: Unzip MacOS Export Template
         run: unzip ./export_templates_macos/export-templates-macos.zip -d ./export_templates_macos
