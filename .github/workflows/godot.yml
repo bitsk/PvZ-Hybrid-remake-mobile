@@ -32,24 +32,21 @@ jobs:
                  
   # 2. 准备Godot项目工程：解压ZIP，找到PCK，使用gdsdecomp还原项目
   prepare-godot-project:
-    runs-on: windows-latest # 将运行器更改为Windows
+    runs-on: windows-latest
     outputs:
       godot_project_artifact: godot-project.zip
       pck_file_path: ${{ steps.find_pck.outputs.pck_path }}
       version: ${{ steps.set_version.outputs.version }}
     steps:
       - name: Download Release ZIP and Extract Version Number
-        shell: pwsh # 明确指定使用PowerShell
+        shell: pwsh
         run: |
           Write-Host "Downloading release ZIP..."
-          # 下载ZIP文件
           Invoke-WebRequest -Uri https://github.com/kero990/PvZ-Hybrid-remake-mobile/releases/download/v0.3/v0.3.zip -OutFile v0.3.zip -ErrorAction Stop
 
-          # 创建目标目录并解压
           New-Item -ItemType Directory -Path extracted -Force -ErrorAction SilentlyContinue | Out-Null
           Expand-Archive -Path v0.3.zip -DestinationPath extracted -Force -ErrorAction Stop
 
-          # 处理解压后的目录结构：将第一层子目录的内容移到 'extracted/' 并删除子目录
           $extractedContentDir = Get-ChildItem -Path "extracted" -Directory | Select-Object -First 1
           if ($extractedContentDir) {
               Write-Host "Moving content from $($extractedContentDir.FullName) to extracted/..."
@@ -59,13 +56,9 @@ jobs:
               Write-Host "No top-level content directory found to move."
           }
 
-          # 清理下载的zip文件
           Remove-Item -Path v0.3.zip -Force -ErrorAction SilentlyContinue
-
-          # 移除.exe文件 (如果不存在则不报错)
           Remove-Item -Path "extracted\*.exe" -Force -ErrorAction SilentlyContinue
 
-          # 查找.pck文件
           $PCK_PATH = (Get-ChildItem -Path extracted -Recurse -Filter "*.pck" | Select-Object -First 1).FullName
 
           if ([string]::IsNullOrEmpty($PCK_PATH)) {
@@ -73,30 +66,30 @@ jobs:
               exit 1
           }
 
-          Write-Host "Contents of extracted directory:"
-          Get-ChildItem -Path extracted | Format-Table -AutoSize # 打印目录内容
+          # 关键修改：将PCK_PATH中的反斜杠替换为正斜杠
+          $PCK_PATH_FOR_GDRE = $PCK_PATH -replace '\\', '/'
 
-          Write-Host "pck_path=$PCK_PATH"
-          # 设置环境变量供后续步骤使用。在PowerShell中，环境变量通过 $env: 前缀访问，写入 $GITHUB_ENV 使用 Add-Content
-          Add-Content -Path $env:GITHUB_ENV -Value "PCK_PATH=$PCK_PATH"
+          Write-Host "Contents of extracted directory:"
+          Get-ChildItem -Path extracted | Format-Table -AutoSize
+
+          Write-Host "Original pck_path=$PCK_PATH"
+          Write-Host "PCK_PATH_FOR_GDRE=$PCK_PATH_FOR_GDRE" # 用于调试确认路径格式
+
+          # 将处理后的路径写入环境变量
+          Add-Content -Path $env:GITHUB_ENV -Value "PCK_PATH=$PCK_PATH_FOR_GDRE"
 
       - name: Clone gdsdecomp for PCK decompilation
-        shell: pwsh # 明确指定使用PowerShell
+        shell: pwsh
         run: |
           Write-Host "Downloading GDRE_tools for Windows..."
-          # 下载Windows版本的GDRE_tools
           Invoke-WebRequest -Uri https://github.com/GDRETools/gdsdecomp/releases/download/v1.0.0/GDRE_tools-v1.0.0-windows.zip -OutFile GDRE_tools-v1.0.0-windows.zip -ErrorAction Stop
 
-          # 创建gdre目录并解压
           New-Item -ItemType Directory -Path gdre -Force -ErrorAction SilentlyContinue | Out-Null
           Expand-Archive -Path GDRE_tools-v1.0.0-windows.zip -DestinationPath gdre -Force -ErrorAction Stop
-
-          # 清理下载的zip文件
           Remove-Item -Path GDRE_tools-v1.0.0-windows.zip -Force -ErrorAction SilentlyContinue
 
-          # 执行Windows版本的GDRE_tools.exe
-          # 通过 $env: 访问之前设置的环境变量 PCK_PATH，并用 & 符号运行可执行文件
           Write-Host "Running gdre_tools.exe --headless --recover=$env:PCK_PATH --output=pvz-project"
+          # 确保这里的 $env:PCK_PATH 已经是正斜杠格式
           & "gdre\gdre_tools.exe" --headless --recover:"$env:PCK_PATH" --output:"pvz-project"
           if ($LASTEXITCODE -ne 0) {
               Write-Error "gdre_tools.exe failed with exit code $LASTEXITCODE"
@@ -113,7 +106,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: pck-file
-          path: "${{ env.PCK_PATH }}" # 在这里通过 ${{ env.VAR_NAME }} 访问环境变量
+          path: "${{ env.PCK_PATH }}"
 
   # 3. Linux导出任务 示例只基于 linux_x86_64 模板和 pck 打包
   export-linux:
