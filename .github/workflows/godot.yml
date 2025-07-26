@@ -93,7 +93,7 @@ jobs:
 
           Write-Host "Running gdre_tools.exe --headless --recover=$env:PCK_PATH --output=pvz-project"
           # 确保这里的 $env:PCK_PATH 已经是正斜杠格式
-          & "gdre\gdre_tools.exe" --headless --recover:"$env:PCK_PATH" --output:"pvz-project"
+          & "gdre\gdre_tools.exe" --headless --recover="$env:PCK_PATH" --output="pvz-project"
           if ($LASTEXITCODE -ne 0) {
               Write-Error "gdre_tools.exe failed with exit code $LASTEXITCODE"
               exit 1
