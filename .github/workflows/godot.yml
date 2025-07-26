@@ -176,9 +176,9 @@ jobs:
           mkdir -p deb/opt/apps/com.pvzhe.hybrid-remake/files
           mkdir -p deb/opt/apps/com.pvzhe.hybrid-remake/entries/applications
           mkdir -p deb/opt/apps/com.pvzhe.hybrid-remake/entries/icons/hicolor/128x128/apps
-          sed -i s@VERSION@$APP_VER@G assets/control
+          sed -i s@VERSION@$APP_VER@g assets/control
           sed -i s@amd64@ARCH@g assets/info
-          sed -i s@VERSION@$APP_VER@G assets/info
+          sed -i s@VERSION@$APP_VER@g assets/info
           sed -i s@amd64@ARCH@g assets/control
           chmod +x assets/run.sh
           echo './linux_release.arm64 --main-pack 植物大战僵尸杂交版v0.3发布版.pck $@' >> assets/run.sh
@@ -235,7 +235,7 @@ jobs:
           unzip Godot_v${{ env.GODOT_VERSION }}-stable_linux.x86_64.zip -d godot
           chmod +x godot/Godot_v$GODOT_VERSION-stable_linux.x86_64
           cp assets/android/export_presets.cfg godot_project
-          godot/Godot_v${{ env.GODOT_VERSION }}-stable_linux.x86_64 --path ./godot_project --export "Android" exported.apk
+          godot/Godot_v${{ env.GODOT_VERSION }}-stable_linux.x86_64 --path ./pvz-project --export "Android" exported.apk
 
       - name: Upload Android artifact
         uses: actions/upload-artifact@v4
@@ -263,7 +263,7 @@ jobs:
           godot-version: ${{ env.GODOT_VERSION }}
 
       - name: Godot iOS Export
-        run: godot --path ./godot_project --export "iOS" exported.xcodeproj
+        run: godot --path ./pvz-project --export "iOS" exported.xcodeproj
 
       - name: Upload iOS Artifact
         uses: actions/upload-artifact@v4
