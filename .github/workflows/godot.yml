@@ -81,7 +81,7 @@ jobs:
       image: debian:10
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         
       - name: Download Export Template artifact
         uses: actions/download-artifact@v4
@@ -90,7 +90,9 @@ jobs:
           path: ./export_templates
 
       - name: Unzip Export Template
-        run: unzip ./export_templates/export-templates.zip -d ./export_templates
+        run: |
+          apt update && apt install unzip
+          unzip ./export_templates/export-templates.zip -d ./export_templates
         
       - name: Download pck-file
         uses: actions/download-artifact@v4
@@ -169,7 +171,7 @@ jobs:
           godot --path ./godot_project --export "Android" exported.apk
 
       - name: Upload Android artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: android-build
           path: exported.apk
@@ -183,7 +185,7 @@ jobs:
       - prepare-godot-project
     steps:
       - name: Download Export Templates iOS artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: export-templates-ios
           path: ./export_templates_ios
@@ -192,7 +194,7 @@ jobs:
         run: unzip ./export_templates_ios/export-templates-ios.zip -d ./export_templates_ios
 
       - name: Download Godot project artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: godot-project
           path: ./godot_project.zip
@@ -209,7 +211,7 @@ jobs:
         run: godot --path ./godot_project --export "iOS" exported.xcodeproj
 
       - name: Upload iOS Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ios-build
           path: exported.xcodeproj
@@ -222,7 +224,7 @@ jobs:
       - prepare-godot-project
     steps:
       - name: Download MacOS Export Template artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: export-templates-macos
           path: ./export_templates_macos
