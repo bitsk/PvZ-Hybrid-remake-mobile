@@ -92,17 +92,16 @@ jobs:
           $command = "gdre\gdre_tools.exe"
           $arguments = @(
               "--headless",
-              "--recover=`"$env:PCK_PATH`"", # 使用反引号转义双引号，确保路径作为一个参数传递
-              "--output=`"pvz-project`""
+              "--recover:`"$env:PCK_PATH`"", # 使用反引号转义双引号，确保路径作为一个参数传递
+              "--output:`"pvz-project`""
           )
 
           Write-Host "Running $command $($arguments -join ' ')"
           
-          # 执行 gdre_tools.exe，捕获其输出和退出代码
-          # < NUL 用于提供一个空输入，解决"按任意键退出"
+          # 核心修改：使用管道 `"" |` 提供空输入，解决"按任意键退出"
           # 2>&1 将标准错误重定向到标准输出
           # Out-String 将所有输出捕获为一个字符串
-          $GDREOutput = & $command $arguments < NUL 2>&1 | Out-String
+          $GDREOutput = "" | & $command $arguments 2>&1 | Out-String
           $GDREExitCode = $LASTEXITCODE
 
           Write-Host "--- gdre_tools.exe Output ---"
