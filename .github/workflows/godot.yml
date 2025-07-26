@@ -74,6 +74,8 @@ jobs:
 
           Write-Host "Original pck_path=$PCK_PATH"
           Write-Host "PCK_PATH_FOR_GDRE=$PCK_PATH_FOR_GDRE" # 用于调试确认路径格式
+          dir $PCK_PATH
+          dir $PCK_PATH_FOR_GDRE
 
           # 将处理后的路径写入环境变量
           Add-Content -Path $env:GITHUB_ENV -Value "PCK_PATH=$PCK_PATH_FOR_GDRE"
