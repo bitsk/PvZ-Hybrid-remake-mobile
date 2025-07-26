@@ -83,6 +83,7 @@ jobs:
       - name: Clone gdsdecomp for PCK decompilation
         shell: pwsh
         run: |
+          $DebugPreference = "Continue" # 开启调试输出
           Write-Host "Downloading GDRE_tools for Windows..."
           Invoke-WebRequest -Uri https://github.com/GDRETools/gdsdecomp/releases/download/v1.0.0/GDRE_tools-v1.0.0-windows.zip -OutFile GDRE_tools-v1.0.0-windows.zip -ErrorAction Stop
 
