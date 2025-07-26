@@ -92,8 +92,8 @@ jobs:
           $command = "gdre\gdre_tools.exe"
           $arguments = @(
               "--headless",
-              "--recover:`"$env:PCK_PATH`"", # 使用反引号转义双引号，确保路径作为一个参数传递
-              "--output:`"pvz-project`""
+              "--recover=`"$env:PCK_PATH`"", # 使用反引号转义双引号，确保路径作为一个参数传递
+              "--output=`"pvz-project`""
           )
 
           Write-Host "Running $command $($arguments -join ' ')"
