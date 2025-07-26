@@ -91,7 +91,8 @@ jobs:
 
       - name: Unzip Export Template
         run: |
-          apt update && apt install unzip
+          sed -i.bak 's/deb.debian.org/archive.debian.org/g' /etc/apt/sources.list
+          apt update && apt install unzip wget curl git make dpkg
           unzip ./export_templates/export-templates.zip -d ./export_templates
         
       - name: Download pck-file
