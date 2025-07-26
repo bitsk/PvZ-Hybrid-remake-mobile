@@ -32,7 +32,7 @@ jobs:
                  
   # 2. 准备Godot项目工程：解压ZIP，找到PCK，使用gdsdecomp还原项目
   prepare-godot-project:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest # 将运行器更改为Windows,以避免linux上的段错误
     outputs:
       godot_project_artifact: godot-project.zip
       pck_file_path: ${{ steps.find_pck.outputs.pck_path }}
@@ -40,10 +40,14 @@ jobs:
     steps:
       - name: Download Release ZIP and Extract Version Number
         run: |
+          # PowerShell是Windows Runner的默认shell，但这里使用bash语法，因为它在GitHub Actions的Windows runner上通过Git Bash环境运行。
+          # 或者，为了更“Windows化”，可以使用PowerShell语法，但现有的bash语法通常也能兼容。
           wget -q https://github.com/kero990/PvZ-Hybrid-remake-mobile/releases/download/v0.3/v0.3.zip
           unzip -q v0.3.zip -d extracted
           mv extracted/*/* extracted/
+          # 移除.exe文件，因为目标是PCK
           rm extracted/*.exe
+          # find命令在Git Bash环境中仍然有效，输出路径会是正斜杠
           PCK_PATH=$(find extracted -name "*.pck" | head -n1)
           if [ -z "$PCK_PATH" ]; then
             echo "No .pck file found!"
@@ -55,10 +59,12 @@ jobs:
       - name: Clone gdsdecomp for PCK decompilation
         run: |
           set -x
-          wget -q https://github.com/GDRETools/gdsdecomp/releases/download/v1.0.0/GDRE_tools-v1.0.0-linux.zip
-          unzip GDRE_tools-v1.0.0-linux.zip -d gdre
-          chmod +x gdre/gdre_tools.x86_64
-          gdre/gdre_tools.x86_64 --headless --recover=$PCK_PATH --output=pvz-project
+          # 下载Windows版本的GDRE_tools
+          wget -q https://github.com/GDRETools/gdsdecomp/releases/download/v1.0.0/GDRE_tools-v1.0.0-windows.zip
+          unzip GDRE_tools-v1.0.0-windows.zip -d gdre
+          # 在Windows上不需要chmod +x
+          # 执行Windows版本的GDRE_tools.exe
+          gdre/gdre_tools.exe --headless --recover="$PCK_PATH" --output=pvz-project
           
       - name: Upload Android artifact
         uses: actions/upload-artifact@v4
@@ -70,7 +76,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: pck-file
-          path: $PCK_PATH
+          path: "$PCK_PATH" # 确保PCK_PATH在引用时被正确引用，特别是如果它包含空格
 
   # 3. Linux导出任务 示例只基于 linux_x86_64 模板和 pck 打包
   export-linux:
