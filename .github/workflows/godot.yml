@@ -50,8 +50,7 @@ jobs:
             exit 1
           fi
           ls extracted/ && echo "pck_path=$PCK_PATH"
-          echo "pck_path=$PCK_PATH" >> $GITHUB_OUTPUT
-          echo "pck_path=$PCK_PATH" >> $GITHUB_ENV
+          echo "PCK_PATH=$PCK_PATH" >> $GITHUB_ENV
 
       - name: Clone gdsdecomp for PCK decompilation
         run: |
