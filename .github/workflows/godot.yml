@@ -187,6 +187,7 @@ jobs:
           PCK_PATH=$(find pck-file -name "*.pck" | head -n1)
           cp $PCK_PATH deb/opt/apps/com.pvzhe.hybrid-remake/files
           cp assets/run.sh deb/opt/apps/com.pvzhe.hybrid-remake/files
+          chmod +x ./templates/linux_release*
           cp ./templates/linux_release.x86_64 deb/opt/apps/com.pvzhe.hybrid-remake/files
           cp assets/debcom.pvzhe.hybrid-remake.png deb/opt/apps/com.pvzhe.hybrid-remake/entries/icons/hicolor/128x128/apps
           cp assets/deb/control deb/DEBIAN
