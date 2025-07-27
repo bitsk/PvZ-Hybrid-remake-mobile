@@ -22,9 +22,9 @@ jobs:
           wget -q https://github.com/godotengine/godot/releases/download/${{ env.GODOT_VERSION }}-stable/Godot_v${{ env.GODOT_VERSION }}-stable_export_templates.tpz
           unzip Godot_v${{ env.GODOT_VERSION }}-stable_export_templates.tpz
           rm *.tpz
-          ls templates
+          echo "删除前" && ls templates
           cd templates && rm windows* *debug* web* -rf && cd ..
-          ls templates
+          echo "删除后" && ls templates
     
       - name: Upload Android artifact
         uses: actions/upload-artifact@v4
@@ -155,28 +155,28 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: export-templates
-          path: ./export_templates.zip
+          path: ./export_templates
           
       - name: Download pck-file
         uses: actions/download-artifact@v4
         with:
           name: pck-file
-          path: ./pck-file.zip
+          path: ./pck-file
 
       - name: Unzip Export Template
         run: |
           find . -name "*.zip" && ls
           sed -i.bak 's/deb.debian.org/archive.debian.org/g' /etc/apt/sources.list
           apt update && apt install unzip wget curl git make dpkg -y
-          unzip ./export-templates.zip -d ./export_templates
-          unzip ./pck-file.zip -d pck-file
+          echo "export_templates内容" && ls ./export_templates
+          echo "pckfile内容" && ls ./pck-file
+#          unzip ./export-templates.zip -d ./export_templates
+#          unzip ./pck-file.zip -d pck-file
         
       - name: pre deb file
         run: |
           # 打包x86_64 deb
           set -x
-          unzip export_templates.zip
-          unzip pck-file.zip
           ls . && ls ./assets
           mkdir -p deb/DEBIAN
           mkdir -p deb/opt/apps/com.pvzhe.hybrid-remake/files
@@ -231,17 +231,17 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: pvz-project
-          path: ./pvz-project.zip
+          path: ./pvz-project
         
       - name: Checkout repository
         uses: actions/checkout@v4
         
       - name: Godot Android Export
         run: |
+          echo "export_templates内容" && ls ./export_templates
           wget -q https://github.com/godotengine/godot/releases/download/${{ env.GODOT_VERSION }}-stable/Godot_v${{ env.GODOT_VERSION }}-stable_linux.x86_64.zip
           unzip Godot_v${{ env.GODOT_VERSION }}-stable_linux.x86_64.zip -d godot
           chmod +x godot/Godot_v$GODOT_VERSION-stable_linux.x86_64
-          unzip pvz_project.zip
           cp assets/android/export_presets.cfg pvz_project
           godot/Godot_v${{ env.GODOT_VERSION }}-stable_linux.x86_64 --path ./pvz-project --export "Android" com.pvzhe.hybrid-remake.apk
 
@@ -265,7 +265,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: pvz-project
-          path: ./pvz-project.zip
+          path: ./pvz-project
 
       - name: Setup Godot iOS Export (请根据实际需求调整)
         uses: dulvui/godot4-ios-export@v1
@@ -294,12 +294,16 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: export-templates
-          path: ./export_templates.zip
-
+          path: ./export_templates
+      - name: Download pck-file
+        uses: actions/download-artifact@v4
+        with:
+          name: pck-file
+          path: ./pck-file
       - name: Copy executable and PCK
         run: |
-          unzip export_templates.zip
-          unzip ./templates/macos.zip -d mac_tepmlate
+          echo "export_templates内容" && ls ./export_templates
+          unzip export_templates/macos.zip -d mac_tepmlate
           cp ./mac_tepmlate/* "./${{ env.APP_NAME }}.app"
           cp ${{ needs.prepare-godot-project.outputs.pck_file_path }} .
 
