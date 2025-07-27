@@ -178,11 +178,11 @@ jobs:
           mkdir -p deb/opt/apps/com.pvzhe.hybrid-remake/files
           mkdir -p deb/opt/apps/com.pvzhe.hybrid-remake/entries/applications
           mkdir -p deb/opt/apps/com.pvzhe.hybrid-remake/entries/icons/hicolor/128x128/apps
-          sed -i s@VERSION@$APP_VER@g assets/control
-          sed -i s@amd64@ARCH@g assets/info
-          sed -i s@VERSION@$APP_VER@g assets/info
-          sed -i s@amd64@ARCH@g assets/control
-          chmod +x assets/run.sh
+          sed -i s@VERSION@$APP_VER@g assets/deb/control
+          sed -i s@amd64@ARCH@g assets/deb/info
+          sed -i s@VERSION@$APP_VER@g assets/deb/info
+          sed -i s@amd64@ARCH@g assets/deb/control
+          chmod +x assets/deb/run.sh
           echo './linux_release.arm64 --main-pack 植物大战僵尸杂交版v0.3发布版.pck $@' >> assets/run.sh
           PCK_PATH=$(find pck-file -name "*.pck" | head -n1)
           cp $PCK_PATH deb/opt/apps/com.pvzhe.hybrid-remake/files
