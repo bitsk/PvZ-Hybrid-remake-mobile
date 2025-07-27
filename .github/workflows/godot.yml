@@ -172,6 +172,8 @@ jobs:
       - name: pre deb file
         run: |
           # 打包x86_64 deb
+          set -x
+          ls . && ls ./assets
           mkdir -p deb/DEBIAN
           mkdir -p deb/opt/apps/com.pvzhe.hybrid-remake/files
           mkdir -p deb/opt/apps/com.pvzhe.hybrid-remake/entries/applications
