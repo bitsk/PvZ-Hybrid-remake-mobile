@@ -1,0 +1,10 @@
+[Desktop Entry]
+Categories=Game
+Name=植物大战僵尸：杂交版重置版
+GenericName=植物大战僵尸：杂交版重置版
+Type=Application
+Exec=/opt/apps/com.pvzhe.hybrid-remake/files/run.sh %F
+Icon=com.pvzhe.hybrid-remake
+Comment[zh_CN]=植物大战僵尸：杂交版重置版是B站up潜艇伟伟迷和原创团队使用全新跨平台引擎重置的杂交版
+GenericName[zh_CN]=植物大战僵尸：杂交版重置版
+Name[zh_CN]=植物大战僵尸：杂交版重置版
