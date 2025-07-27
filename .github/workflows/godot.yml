@@ -21,8 +21,8 @@ jobs:
         run: |
           wget -q https://github.com/godotengine/godot/releases/download/${{ env.GODOT_VERSION }}-stable/Godot_v${{ env.GODOT_VERSION }}-stable_export_templates.tpz
           unzip Godot_v${{ env.GODOT_VERSION }}-stable_export_templates.tpz
-          mv Godot_v${{ env.GODOT_VERSION }}-stable_export_templates/templates . && rm Godot_v${{ env.GODOT_VERSION }}-stable_export_templates* -rf
-          pushd templates && rm windows* linux_debug* && popd
+          pushd templates && rm windows* *debug* web* && popd
+          ls templates
     
       - name: Upload Android artifact
         uses: actions/upload-artifact@v4
@@ -166,8 +166,8 @@ jobs:
           find . -name "*.zip" && ls
           sed -i.bak 's/deb.debian.org/archive.debian.org/g' /etc/apt/sources.list
           apt update && apt install unzip wget curl git make dpkg -y
-#          unzip ./export-templates.zip -d ./export_templates
-#          unzip ./pck-file.zip -d pck-file
+          unzip ./export-templates.zip -d ./export_templates
+          unzip ./pck-file.zip -d pck-file
         
       - name: pre deb file
         run: |
