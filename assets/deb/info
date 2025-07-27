@@ -2,7 +2,7 @@
 “appid”: “com.pvzhe.hybrid-remake”,
 “name”: “植物大战僵尸：杂交版重置版”,
 “version”: “VERSION”,
-“arch”: [“ARCH”],
+“arch”: “ARCH”,
 “permissions”: {
 “autostart”: true,
 “notification”: true,
