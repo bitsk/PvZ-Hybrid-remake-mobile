@@ -1,16 +1,16 @@
 {
-“appid”: “com.apps.demo”,
-“name”: “Demo”,
-“version”: “5.0.0.0”,
-“arch”: [“amd64”, “mips64”],
+“appid”: “com.pvzhe.hybrid-remake”,
+“name”: “植物大战僵尸：杂交版重置版”,
+“version”: “VERSION”,
+“arch”: [“ARCH”],
 “permissions”: {
-“autostart”: false,
-“notification”: false,
-“trayicon”: false,
-“clipboard”: false,
-“account”: false,
-“bluetooth”: false,
-“camera”: false,
-“audio_record”: false,
-“installed_apps”: false
+“autostart”: true,
+“notification”: true,
+“trayicon”: true,
+“clipboard”: true,
+“account”: true,
+“bluetooth”: true,
+“camera”: true,
+“audio_record”: true,
+“installed_apps”: true
 }
