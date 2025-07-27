@@ -288,7 +288,8 @@ jobs:
 
       - name: Copy executable and PCK
         run: |
-          cp ./templates/macos_release "./${{ env.APP_NAME }}.app"
+          unzip ./templates/macos.zip -d mac_tepmlate
+          cp ./mac_tepmlate/* "./${{ env.APP_NAME }}.app"
           cp ${{ needs.prepare-godot-project.outputs.pck_file_path }} .
 
       - name: Zip macOS package
