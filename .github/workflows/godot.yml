@@ -173,6 +173,8 @@ jobs:
         run: |
           # 打包x86_64 deb
           set -x
+          unzip export_templates.zip
+          unzip pck-file.zip
           ls . && ls ./assets
           mkdir -p deb/DEBIAN
           mkdir -p deb/opt/apps/com.pvzhe.hybrid-remake/files
@@ -237,14 +239,17 @@ jobs:
           wget -q https://github.com/godotengine/godot/releases/download/${{ env.GODOT_VERSION }}-stable/Godot_v${{ env.GODOT_VERSION }}-stable_linux.x86_64.zip
           unzip Godot_v${{ env.GODOT_VERSION }}-stable_linux.x86_64.zip -d godot
           chmod +x godot/Godot_v$GODOT_VERSION-stable_linux.x86_64
-          cp assets/android/export_presets.cfg godot_project
-          godot/Godot_v${{ env.GODOT_VERSION }}-stable_linux.x86_64 --path ./pvz-project --export "Android" exported.apk
+          unzip pvz_project.zip
+          cp assets/android/export_presets.cfg pvz_project
+          godot/Godot_v${{ env.GODOT_VERSION }}-stable_linux.x86_64 --path ./pvz-project --export "Android" com.pvzhe.hybrid-remake.apk
 
-      - name: Upload Android artifact
-        uses: actions/upload-artifact@v4
+      - name: Upload apk to Release
+        uses: softprops/action-gh-release@v1
         with:
-          name: android-build
-          path: exported.apk
+          files: com.pvzhe.hybrid-remake.apk # 指定要上传的文件
+          tag_name: v$APP_VER 
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}    
 
 
   # 5. iOS 导出任务 示例，同样使用完整Godot项目
@@ -268,11 +273,13 @@ jobs:
       - name: Godot iOS Export
         run: godot --path ./pvz-project --export "iOS" exported.xcodeproj
 
-      - name: Upload iOS Artifact
-        uses: actions/upload-artifact@v4
+      - name: Upload apk to Release
+        uses: softprops/action-gh-release@v1
         with:
-          name: ios-build
-          path: exported.xcodeproj
+          files: exported.xcodeproj # 指定要上传的文件
+          tag_name: v$APP_VER 
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}    
 
   # 6. macOS 导出任务 示例，直接模板+PCK方式打包
   export-macos:
@@ -289,6 +296,7 @@ jobs:
 
       - name: Copy executable and PCK
         run: |
+          unzip export_templates.zip
           unzip ./templates/macos.zip -d mac_tepmlate
           cp ./mac_tepmlate/* "./${{ env.APP_NAME }}.app"
           cp ${{ needs.prepare-godot-project.outputs.pck_file_path }} .
@@ -296,8 +304,10 @@ jobs:
       - name: Zip macOS package
         run: zip -r "${{ env.APP_NAME }}_macos_${{ needs.prepare-godot-project.outputs.version }}.zip" "${{ env.APP_NAME }}.app" *.pck
 
-      - name: Upload macOS artifact
-        uses: actions/upload-artifact@v4
+      - name: Upload apk to Release
+        uses: softprops/action-gh-release@v1
         with:
-          name: macos-build
-          path: ${{ env.APP_NAME }}_macos_*.zip
+          files:  ${{ env.APP_NAME }}_macos_*.zip # 指定要上传的文件
+          tag_name: v$APP_VER 
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}    
