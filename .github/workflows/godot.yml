@@ -188,10 +188,10 @@ jobs:
           cp $PCK_PATH deb/opt/apps/com.pvzhe.hybrid-remake/files
           cp assets/run.sh deb/opt/apps/com.pvzhe.hybrid-remake/files
           cp ./templates/linux_release.x86_64 deb/opt/apps/com.pvzhe.hybrid-remake/files
-          cp assets/com.pvzhe.hybrid-remake.png deb/opt/apps/com.pvzhe.hybrid-remake/entries/icons/hicolor/128x128/apps
-          cp assets/control deb/DEBIAN
-          cp assets/com.pvzhe.hybrid-remake.desktop deb/opt/apps/com.pvzhe.hybrid-remake/entries/applications
-          cp assets/info deb/opt/apps/com.pvzhe.hybrid-remake
+          cp assets/debcom.pvzhe.hybrid-remake.png deb/opt/apps/com.pvzhe.hybrid-remake/entries/icons/hicolor/128x128/apps
+          cp assets/deb/control deb/DEBIAN
+          cp assets/deb/com.pvzhe.hybrid-remake.desktop deb/opt/apps/com.pvzhe.hybrid-remake/entries/applications
+          cp assets/deb/info deb/opt/apps/com.pvzhe.hybrid-remake
           dpkg-deb -b deb/
           mv deb.deb com.pvzhe.hybrid-remake_0.3_amd64.deb
           
