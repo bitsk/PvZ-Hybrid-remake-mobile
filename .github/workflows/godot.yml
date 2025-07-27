@@ -155,7 +155,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: export-templates
-          path: ./export_templates
+          path: ./templates/
           
       - name: Download pck-file
         uses: actions/download-artifact@v4
@@ -168,7 +168,7 @@ jobs:
           find . -name "*.zip" && ls
           sed -i.bak 's/deb.debian.org/archive.debian.org/g' /etc/apt/sources.list
           apt update && apt install unzip wget curl git make dpkg -y
-          echo "export_templates内容" && ls ./export_templates
+          echo "export_templates内容" && ls ./templates
           echo "pckfile内容" && ls ./pck-file
 #          unzip ./export-templates.zip -d ./export_templates
 #          unzip ./pck-file.zip -d pck-file
@@ -238,7 +238,6 @@ jobs:
         
       - name: Godot Android Export
         run: |
-          echo "export_templates内容" && ls ./export_templates
           wget -q https://github.com/godotengine/godot/releases/download/${{ env.GODOT_VERSION }}-stable/Godot_v${{ env.GODOT_VERSION }}-stable_linux.x86_64.zip
           unzip Godot_v${{ env.GODOT_VERSION }}-stable_linux.x86_64.zip -d godot
           chmod +x godot/Godot_v$GODOT_VERSION-stable_linux.x86_64
@@ -271,11 +270,12 @@ jobs:
         uses: dulvui/godot4-ios-export@v1
         with:
           godot-version: ${{ env.GODOT_VERSION }}
+          working-directory: ./pvz-project
 
       - name: Godot iOS Export
         run: godot --path ./pvz-project --export "iOS" exported.xcodeproj
 
-      - name: Upload apk to Release
+      - name: Upload ipa to Release
         uses: softprops/action-gh-release@v1
         with:
           files: exported.xcodeproj # 指定要上传的文件
@@ -294,7 +294,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: export-templates
-          path: ./export_templates
+          path: ./templates
       - name: Download pck-file
         uses: actions/download-artifact@v4
         with:
@@ -302,10 +302,9 @@ jobs:
           path: ./pck-file
       - name: Copy executable and PCK
         run: |
-          echo "export_templates内容" && ls ./export_templates
-          unzip export_templates/macos.zip -d mac_tepmlate
-          cp ./mac_tepmlate/* "./${{ env.APP_NAME }}.app"
-          cp ${{ needs.prepare-godot-project.outputs.pck_file_path }} .
+          unzip templates/macos.zip -d mac_tepmlate
+          cp ./mac_tepmlate/* "./${{ env.APP_NAME }}.app" -r
+          cp ${{ needs.prepare-godot-project.outputs.pck_file_path }} . 
 
       - name: Zip macOS package
         run: zip -r "${{ env.APP_NAME }}_macos_${{ needs.prepare-godot-project.outputs.version }}.zip" "${{ env.APP_NAME }}.app" *.pck
