@@ -190,10 +190,10 @@ jobs:
           echo './linux_release.arm64 --main-pack 植物大战僵尸杂交版v0.3发布版.pck $@' >> assets/run.sh
           PCK_PATH=$(find pck-file -name "*.pck" | head -n1)
           cp $PCK_PATH deb/opt/apps/com.pvzhe.hybrid-remake/files
-          cp assets/run.sh deb/opt/apps/com.pvzhe.hybrid-remake/files
+          cp assets/deb/run.sh deb/opt/apps/com.pvzhe.hybrid-remake/files
           chmod +x ./templates/linux_release*
           cp ./templates/linux_release.x86_64 deb/opt/apps/com.pvzhe.hybrid-remake/files
-          cp assets/debcom.pvzhe.hybrid-remake.png deb/opt/apps/com.pvzhe.hybrid-remake/entries/icons/hicolor/128x128/apps
+          cp assets/deb/com.pvzhe.hybrid-remake.png deb/opt/apps/com.pvzhe.hybrid-remake/entries/icons/hicolor/128x128/apps
           cp assets/deb/control deb/DEBIAN
           cp assets/deb/com.pvzhe.hybrid-remake.desktop deb/opt/apps/com.pvzhe.hybrid-remake/entries/applications
           cp assets/deb/info deb/opt/apps/com.pvzhe.hybrid-remake
