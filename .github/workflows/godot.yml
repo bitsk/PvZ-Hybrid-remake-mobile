@@ -242,6 +242,7 @@ jobs:
           unzip Godot_v${{ env.GODOT_VERSION }}-stable_linux.x86_64.zip -d godot
           chmod +x godot/Godot_v$GODOT_VERSION-stable_linux.x86_64
           cp assets/android/export_presets.cfg pvz_project
+          ls pvz_project
           godot/Godot_v${{ env.GODOT_VERSION }}-stable_linux.x86_64 --path ./pvz-project --export "Android" com.pvzhe.hybrid-remake.apk
 
       - name: Upload apk to Release
@@ -266,14 +267,8 @@ jobs:
           name: pvz-project
           path: ./pvz-project
 
-      - name: Setup Godot iOS Export (请根据实际需求调整)
-        uses: dulvui/godot4-ios-export@v1
-        with:
-          godot-version: ${{ env.GODOT_VERSION }}
-          working-directory: ./pvz-project
-
       - name: Godot iOS Export
-        run: godot --path ./pvz-project --export "iOS" exported.xcodeproj
+        run: godot --path ./pvz-project --export "iOS" 
 
       - name: Upload ipa to Release
         uses: softprops/action-gh-release@v1
@@ -302,8 +297,7 @@ jobs:
           path: ./pck-file
       - name: Copy executable and PCK
         run: |
-          unzip templates/macos.zip -d mac_tepmlate
-          cp ./mac_tepmlate/* "./${{ env.APP_NAME }}.app" -r
+          cp ./tepmlates/macos.zip "./${{ env.APP_NAME }}.app"
           cp ${{ needs.prepare-godot-project.outputs.pck_file_path }} . 
 
       - name: Zip macOS package
