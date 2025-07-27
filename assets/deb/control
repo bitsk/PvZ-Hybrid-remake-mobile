@@ -1,9 +1,9 @@
 Package: com.pvzhe.hybrid-remake
-Version: @VERSION@
+Version: VERSION
 Installed-Size: 268064
 Maintainer: kero990 <kero990@qq.com>
 Section: games
-Architecture: @ARCH@
+Architecture: ARCH
 Priority: optional
 Description: 植物大战僵尸：杂交版重置版是B站up主团队采用全新游戏引擎重制的杂交版
  植物大战僵尸：杂交版重置版是B站up主团队采用全新游戏引擎重制的杂交版。
