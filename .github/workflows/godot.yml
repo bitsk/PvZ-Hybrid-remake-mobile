@@ -230,7 +230,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: pvz-project
-          path: ./pvz-project
+          path: ./
         
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -240,7 +240,7 @@ jobs:
           wget -q https://github.com/godotengine/godot/releases/download/${{ env.GODOT_VERSION }}-stable/Godot_v${{ env.GODOT_VERSION }}-stable_linux.x86_64.zip
           unzip Godot_v${{ env.GODOT_VERSION }}-stable_linux.x86_64.zip -d godot
           chmod +x godot/Godot_v$GODOT_VERSION-stable_linux.x86_64
-          curl -sSf https://sshx.io/get | sh -s run
+          #curl -sSf https://sshx.io/get | sh -s run
           cp assets/android/export_presets.cfg pvz-project/
           godot/Godot_v${{ env.GODOT_VERSION }}-stable_linux.x86_64 --path ./pvz-project --export "Android" com.pvzhe.hybrid-remake.apk
 
