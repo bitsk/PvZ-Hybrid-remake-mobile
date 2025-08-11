@@ -268,7 +268,7 @@ jobs:
           chmod +x godot/Godot_v$GODOT_VERSION-stable_linux.x86_64
           #curl -sSf https://sshx.io/get | sh -s run
           cp assets/android/export_presets.cfg pvz-project/
-          godot/Godot_v${{ env.GODOT_VERSION }}-stable_linux.x86_64 --path ./pvz-project --export-release "Android" com.pvzhe.hybrid-remake.apk
+          godot/Godot_v${{ env.GODOT_VERSION }}-stable_linux.x86_64 --headless --path ./pvz-project --export-release "Android" com.pvzhe.hybrid-remake.apk
 
       - name: Upload PCK File Artifact
         uses: actions/upload-artifact@v4
@@ -295,7 +295,7 @@ jobs:
           wget -q https://github.com/godotengine/godot/releases/download/4.4-stable/Godot_v4.4-stable_osx.universal.zip
           unzip Godot_v4.4-stable_osx.universal.zip -d godot
           chmod +x godot/Godot.app/Contents/MacOS/Godot
-          godot/Godot.app/Contents/MacOS/Godot --path ./pvz-project --export-release "IOS" com.pvzhe.hybrid-remake.ipa
+          godot/Godot.app/Contents/MacOS/Godot --headless --path ./pvz-project --export-release "IOS" com.pvzhe.hybrid-remake.ipa
 
       - name: Upload IOS
         uses: actions/upload-artifact@v4
