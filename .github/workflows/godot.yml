@@ -317,6 +317,8 @@ jobs:
         with:
           name: pck-file
           path: ./pck-file
+      - run: ls -lhd ./pck-file
+      - run: ls -lhd ./templates
       - name: Copy executable and PCK
         run: |
           cp ./tepmlates/macos.zip "./${{ env.APP_NAME }}.app"
