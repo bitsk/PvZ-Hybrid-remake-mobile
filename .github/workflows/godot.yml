@@ -254,6 +254,8 @@ jobs:
         with:
           name: pvz-project
           path: ./
+      - run: file ./pvz-project
+      - run: ls -lhd ./pvz-project
         
       - name: Checkout repository
         uses: actions/checkout@v4
