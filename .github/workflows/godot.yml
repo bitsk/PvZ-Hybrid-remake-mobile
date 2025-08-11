@@ -246,6 +246,9 @@ jobs:
       - download-export-templates
       - prepare-godot-project
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
       - name: Setup Java & Android SDK
         uses: android-actions/setup-android@v2
 
@@ -256,9 +259,6 @@ jobs:
           path: ./
       - run: file ./pvz-project
       - run: ls -lhd ./pvz-project
-        
-      - name: Checkout repository
-        uses: actions/checkout@v4
         
       - name: Godot Android Export
         run: |
