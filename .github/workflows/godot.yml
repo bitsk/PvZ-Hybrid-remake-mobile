@@ -251,12 +251,13 @@ jobs:
         
       - name: Setup Java & Android SDK
         uses: android-actions/setup-android@v2
+      - run: mkdir ./pvz-project
 
       - name: Download Godot project artifact
         uses: actions/download-artifact@v4
         with:
           name: pvz-project
-          path: ./
+          path: ./pvz-project
       - run: file ./pvz-project
       - run: ls -lhd ./pvz-project
         
@@ -305,11 +306,12 @@ jobs:
       - download-export-templates
       - prepare-godot-project
     steps:
+      - run: mkdir ./templates && mkdir ./pck-file
       - name: Download MacOS Export Template artifact
         uses: actions/download-artifact@v4
         with:
           name: export-templates
-          path: ./
+          path: ./templates
       - name: Download pck-file
         uses: actions/download-artifact@v4
         with:
