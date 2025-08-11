@@ -214,6 +214,7 @@ jobs:
         if: github.ref_type == ${{ env.APP_VER }}
         with:
           files: ./*.deb # 指定要上传的文件
+          overwrite_files: false
 
         
   # 4. Android 导出任务 示例，使用反编译工程，需根据实际环境配置签名等参数
