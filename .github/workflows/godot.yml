@@ -264,7 +264,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: pvz-project
-          path: ./pvz-project
+          path: ./
 
       - name: Godot iOS Export
         run: godot --path ./pvz-project --export "iOS" 
@@ -288,7 +288,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: export-templates
-          path: ./templates
+          path: ./
       - name: Download pck-file
         uses: actions/download-artifact@v4
         with:
