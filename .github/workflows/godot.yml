@@ -208,6 +208,13 @@ jobs:
           sed -i s@x86_64@arm64@g deb/opt/apps/com.pvzhe.hybrid-remake/files/run.sh
           dpkg-deb -b deb/
           mv deb.deb com.pvzhe.hybrid-remake_$APP_VER_arm64.deb
+          mkdir releases && mv *.deb releases/
+          
+      - name: Download other release
+        uses: actions/download-artifact@v4
+        with:
+          name: export-templates
+          path: ./templates/        
           
       - name: Upload Linux build to Release
         uses: softprops/action-gh-release@v2
