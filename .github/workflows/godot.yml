@@ -145,6 +145,9 @@ jobs:
     needs:
       - download-export-templates
       - prepare-godot-project
+      - export-android
+      - export-ios
+      - export-macos      
     container:
       image: debian:10
     steps:
@@ -213,15 +216,27 @@ jobs:
       - name: Download other release
         uses: actions/download-artifact@v4
         with:
-          name: export-templates
-          path: ./templates/        
+          name: export-android
+          path: ./releases 
           
-      - name: Upload Linux build to Release
-        uses: softprops/action-gh-release@v2
-        if: github.ref_type == ${{ env.APP_VER }}
+      - name: Download other release
+        uses: actions/download-artifact@v4
         with:
-          files: ./*.deb # 指定要上传的文件
-          overwrite_files: false
+          name: export-ios
+          path: ./releases        
+          
+      - name: Download other release
+        uses: actions/download-artifact@v4
+        with:
+          name: export-mac
+          path: ./releases           
+          
+      - name: Edit release add files
+        uses: irongut/EditRelease@v1.2.0
+        with:
+           id: v${{ env.APP_VER }}           # 指定已有 release 的 ID
+           files: ./releases/*              # 要添加的文件，相对路径
+           body: "Update release with new assets"
 
         
   # 4. Android 导出任务 示例，使用反编译工程，需根据实际环境配置签名等参数
@@ -252,13 +267,11 @@ jobs:
           cp assets/android/export_presets.cfg pvz-project/
           godot/Godot_v${{ env.GODOT_VERSION }}-stable_linux.x86_64 --path ./pvz-project --export "Android" com.pvzhe.hybrid-remake.apk
 
-      - name: Upload apk to Release
-        uses: softprops/action-gh-release@v1
+      - name: Upload PCK File Artifact
+        uses: actions/upload-artifact@v4
         with:
-          files: com.pvzhe.hybrid-remake.apk # 指定要上传的文件
-          tag_name: v$APP_VER 
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}    
+          name: export-android
+          path: com.pvzhe.hybrid-remake.apk
 
 
   # 5. iOS 导出任务 示例，同样使用完整Godot项目
@@ -277,13 +290,11 @@ jobs:
       - name: Godot iOS Export
         run: godot --path ./pvz-project --export "iOS" 
 
-      - name: Upload ipa to Release
-        uses: softprops/action-gh-release@v1
+      - name: Upload PCK File Artifact
+        uses: actions/upload-artifact@v4
         with:
-          files: exported.xcodeproj # 指定要上传的文件
-          tag_name: v$APP_VER 
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}    
+          name: export-ios
+          path: ./*.ipa
 
   # 6. macOS 导出任务 示例，直接模板+PCK方式打包
   export-macos:
@@ -310,10 +321,8 @@ jobs:
       - name: Zip macOS package
         run: zip -r "${{ env.APP_NAME }}_macos_${{ needs.prepare-godot-project.outputs.version }}.zip" "${{ env.APP_NAME }}.app" *.pck
 
-      - name: Upload apk to Release
-        uses: softprops/action-gh-release@v1
+      - name: Upload mac release
+        uses: actions/upload-artifact@v4
         with:
-          files:  ${{ env.APP_NAME }}_macos_*.zip # 指定要上传的文件
-          tag_name: v$APP_VER 
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}    
+          name: export-mac
+          path: ./*.app
