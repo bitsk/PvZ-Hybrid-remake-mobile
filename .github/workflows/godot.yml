@@ -268,7 +268,7 @@ jobs:
           chmod +x godot/Godot_v$GODOT_VERSION-stable_linux.x86_64
           #curl -sSf https://sshx.io/get | sh -s run
           cp assets/android/export_presets.cfg pvz-project/
-          godot/Godot_v${{ env.GODOT_VERSION }}-stable_linux.x86_64 --path ./pvz-project --export "Android" com.pvzhe.hybrid-remake.apk
+          godot/Godot_v${{ env.GODOT_VERSION }}-stable_linux.x86_64 --path ./pvz-project --export-release "Android" com.pvzhe.hybrid-remake.apk
 
       - name: Upload PCK File Artifact
         uses: actions/upload-artifact@v4
@@ -284,16 +284,20 @@ jobs:
       - download-export-templates
       - prepare-godot-project
     steps:
+      - run: mkdir ./pvz-project
       - name: Download Godot project artifact
         uses: actions/download-artifact@v4
         with:
           name: pvz-project
-          path: ./
+          path: ./pvz-project
+      - name: Download Godot macOS
+        run: |
+          wget -q https://github.com/godotengine/godot/releases/download/4.4-stable/Godot_v4.4-stable_osx.universal.zip
+          unzip Godot_v4.4-stable_osx.universal.zip -d godot
+          chmod +x godot/Godot.app/Contents/MacOS/Godot
+          godot/Godot.app/Contents/MacOS/Godot --path ./pvz-project --export-release "IOS" com.pvzhe.hybrid-remake.ipa
 
-      - name: Godot iOS Export
-        run: godot --path ./pvz-project --export "iOS" 
-
-      - name: Upload PCK File Artifact
+      - name: Upload IOS
         uses: actions/upload-artifact@v4
         with:
           name: export-ios
@@ -317,8 +321,8 @@ jobs:
         with:
           name: pck-file
           path: ./pck-file
-      - run: ls -lhd ./pck-file
-      - run: ls -lhd ./templates
+      - run: ls  ./pck-file
+      - run: ls  ./templates
       - name: Copy executable and PCK
         run: |
           cp ./tepmlates/macos.zip "./${{ env.APP_NAME }}.app"
