@@ -132,8 +132,8 @@ jobs:
         run: |
           sed -i.bak 's/deb.debian.org/archive.debian.org/g' /etc/apt/sources.list
           apt update && apt install unzip wget curl git make dpkg -y
-          wget https://github.com/godotengine/godot/releases/download/GODOT_VERSION-stable/Godot_vGODOT_VERSION-stable_export_templates.tpz
-          unzip Godot_vGODOT_VERSION-stable_export_templates.tpz
+          wget https://github.com/godotengine/godot/releases/download/$GODOT_VERSION-stable/Godot_v$GODOT_VERSION-stable_export_templates.tpz
+          unzip Godot_v$GODOT_VERSION-stable_export_templates.tpz
           rm  *.tpz
           cd templates && rm android* ios.zip macos.zip web* win* linux_debug* -f 
       - name: pre deb file
