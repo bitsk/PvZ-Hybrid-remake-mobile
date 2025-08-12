@@ -6,7 +6,8 @@ env:
   GODOT_VERSION: 4.4
   APP_NAME: "植物大战僵尸杂交版"
   APP_VER: "0.3"
-
+permissions:
+  contents: write
 jobs:
          
   prepare-godot-project:
