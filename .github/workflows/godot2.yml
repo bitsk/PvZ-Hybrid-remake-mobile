@@ -83,16 +83,25 @@ jobs:
           name: pvz-project
           path: ./pvz-project
       - run: cp assets/export_presets.cfg ./pvz-project
-      - name: export game
-        id: export
+      - name: export game mac
         uses: firebelley/godot-export@v6.0.0
         with:
           godot_executable_download_url: https://github.com/godotengine/godot/releases/download/${{ env.GODOT_VERSION }}-stable/Godot_v${{ env.GODOT_VERSION }}-stable_macos.universal.zip
           godot_export_templates_download_url: https://github.com/godotengine/godot/releases/download/${{ env.GODOT_VERSION }}-stable/Godot_v${{ env.GODOT_VERSION }}-stable_export_templates.tpz
           relative_project_path: ./pvz-project/
           relative_export_path: ./releases
-          presets_to_export: 'macOS,iOS'
-      - run: mv ./releases/*/*.apk ./releases
+          presets_to_export: 'macOS'
+          
+      - name: export game ios
+        uses: firebelley/godot-export@v6.0.0
+        with:
+          godot_executable_download_url: https://github.com/godotengine/godot/releases/download/${{ env.GODOT_VERSION }}-stable/Godot_v${{ env.GODOT_VERSION }}-stable_macos.universal.zip
+          godot_export_templates_download_url: https://github.com/godotengine/godot/releases/download/${{ env.GODOT_VERSION }}-stable/Godot_v${{ env.GODOT_VERSION }}-stable_export_templates.tpz
+          relative_project_path: ./pvz-project/
+          relative_export_path: ./releases
+          presets_to_export: 'iOS'          
+
+
       - name: Upload Project Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -102,7 +111,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: macos
-          path: ./releases/*.app
+          path: ./releases/*.zip
           
   export-linux:
     runs-on: ubuntu-latest
