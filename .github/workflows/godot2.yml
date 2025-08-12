@@ -62,6 +62,7 @@ jobs:
           relative_project_path: ./pvz-project/
           relative_export_path: ./releases
           presets_to_export: Android
+      - run: ls ./releases/Android && mv ./releases/*/*.apk ./releases
       - name: Upload Project Artifact
         uses: actions/upload-artifact@v4
         with:
