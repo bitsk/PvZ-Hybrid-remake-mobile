@@ -63,7 +63,7 @@ jobs:
           relative_project_path: ./pvz-project/
           relative_export_path: ./releases
           presets_to_export: Android
-      - run: ls ./releases/Android && mv ./releases/*/*.apk ./releases
+      - run: find releases/ -name "*.apk" -exec mv {} releases/PlantsVsZombies_Hybrid_0.3.apk \;
       - name: Upload Project Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -103,7 +103,7 @@ jobs:
           relative_export_path: ./releases
           presets_to_export: 'iOS' 
           export_debug: true
-      - run:  find releases/ -name "*.zip" -exec mv {} releases/ \;
+      - run:  find releases/ -name "*.zip" -exec mv {} releases/PlantsVsZombies_Hybrid_0.3_MacOS.zip \;
       - name: Upload Project Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -182,9 +182,7 @@ jobs:
           name: macos
           path: ./releases        
           
-      - name: Release Upload Assets
-        uses: jaywcjlove/github-action-upload-assets@main
-        with:
-          tag: v${{ env.APP_VER }}
-          asset-path: '["./releases/*"]'      
-        
+      - name: Upload files to existing release
+        run: gh release upload v0.3 ./releases/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
