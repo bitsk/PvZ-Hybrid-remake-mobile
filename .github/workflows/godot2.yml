@@ -1,0 +1,276 @@
+name: Godot Export
+
+on:
+  workflow_dispatch:
+env:
+  GODOT_VERSION: 4.4
+  APP_NAME: "植物大战僵尸杂交版"
+  APP_VER: "0.3"
+
+jobs:
+  prepare-godot-project:
+    runs-on: windows-latest
+    outputs:
+      godot_project_artifact: godot-project.zip
+      pck_file_path: ${{ steps.find_pck.outputs.pck_path }}
+      version: ${{ steps.set_version.outputs.version }}
+    steps:
+      - name: Download Release ZIP and Extract Version Number
+        shell: pwsh
+        run: |
+          Write-Host "Downloading release ZIP..."
+          Invoke-WebRequest -Uri https://github.com/kero990/PvZ-Hybrid-remake-mobile/releases/download/v0.3/v0.3.zip -OutFile v0.3.zip -ErrorAction Stop
+
+          New-Item -ItemType Directory -Path extracted -Force -ErrorAction SilentlyContinue | Out-Null
+          Expand-Archive -Path v0.3.zip -DestinationPath extracted -Force -ErrorAction Stop
+
+          $extractedContentDir = Get-ChildItem -Path "extracted" -Directory | Select-Object -First 1
+          if ($extractedContentDir) {
+              Write-Host "Moving content from $($extractedContentDir.FullName) to extracted/..."
+              Move-Item -Path "$($extractedContentDir.FullName)\*" -Destination "extracted" -Force -ErrorAction Stop
+              Remove-Item -Path $extractedContentDir.FullName -Recurse -Force -ErrorAction Stop
+          } else {
+              Write-Host "No top-level content directory found to move."
+          }
+
+          Remove-Item -Path v0.3.zip -Force -ErrorAction SilentlyContinue
+          Remove-Item -Path "extracted\*.exe" -Force -ErrorAction SilentlyContinue
+
+          $PCK_PATH = (Get-ChildItem -Path extracted -Recurse -Filter "*.pck" | Select-Object -First 1).FullName
+
+          if ([string]::IsNullOrEmpty($PCK_PATH)) {
+              Write-Error "No .pck file found!"
+              exit 1
+          }
+
+          # 将PCK_PATH中的反斜杠替换为正斜杠，以更好地兼容Godot工具
+          $PCK_PATH_FOR_GDRE = $PCK_PATH -replace '\\', '/'
+
+          Write-Host "Contents of extracted directory:"
+          Get-ChildItem -Path extracted | Format-Table -AutoSize
+
+          Write-Host "Original pck_path=$PCK_PATH"
+          Write-Host "PCK_PATH_FOR_GDRE=$PCK_PATH_FOR_GDRE"
+
+          # 将处理后的路径写入环境变量
+          Add-Content -Path $env:GITHUB_ENV -Value "PCK_PATH=$PCK_PATH_FOR_GDRE"
+
+      - name: Clone gdsdecomp for PCK decompilation
+        shell: pwsh
+        run: |
+          Write-Host "Downloading GDRE_tools for Windows..."
+          Invoke-WebRequest -Uri https://github.com/GDRETools/gdsdecomp/releases/download/v1.0.0/GDRE_tools-v1.0.0-windows.zip -OutFile GDRE_tools-v1.0.0-windows.zip -ErrorAction Stop
+
+          New-Item -ItemType Directory -Path gdre -Force -ErrorAction SilentlyContinue | Out-Null
+          Expand-Archive -Path GDRE_tools-v1.0.0-windows.zip -DestinationPath gdre -Force -ErrorAction Stop
+          Remove-Item -Path GDRE_tools-v1.0.0-windows.zip -Force -ErrorAction SilentlyContinue
+
+          # 准备命令和参数
+          $command = "gdre\gdre_tools.exe"
+          $arguments = @(
+              "--headless",
+              "--recover=`"$env:PCK_PATH`"", # 使用反引号转义双引号，确保路径作为一个参数传递
+              "--output=`"pvz-project`""
+          )
+
+          Write-Host "Running $command $($arguments -join ' ')"
+          
+          # 核心修改：使用管道 `"" |` 提供空输入，解决"按任意键退出"
+          # 2>&1 将标准错误重定向到标准输出
+          # Out-String 将所有输出捕获为一个字符串
+          $GDREOutput = "" | & $command $arguments 2>&1 | Out-String
+          $GDREExitCode = $LASTEXITCODE
+
+          Write-Host "--- gdre_tools.exe Output ---"
+          Write-Host $GDREOutput
+          Write-Host "--- End of gdre_tools.exe Output (Exit Code: $GDREExitCode) ---"
+
+          # 检查退出代码和输出内容以判断是否为可接受的警告
+          if ($GDREExitCode -ne 0) {
+              # 检查是否包含特定的警告信息
+              $pluginWarning1 = "WARNING: Failed to recreate plugin.cfg for AdobeAnimateEditor"
+              $pluginWarning2 = "WARNING: Failed to recreate plugin.cfg for com.heroiclabs.nakama"
+
+              if ($GDREOutput -match $pluginWarning1 -and $GDREOutput -match $pluginWarning2) {
+                  Write-Warning "gdre_tools.exe exited with non-zero code ($GDREExitCode) but only detected plugin.cfg warnings. Continuing as success."
+                  exit 0 # 强制成功，以便GitHub Actions继续
+              } else {
+                  Write-Error "gdre_tools.exe failed with unexpected errors (Exit Code: $GDREExitCode)."
+                  exit $GDREExitCode # 报告真正的错误
+              }
+          } else {
+              Write-Host "gdre_tools.exe completed successfully."
+          }
+          
+      - name: Upload Project Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pvz-project
+          path: pvz-project/
+          
+      - name: Upload PCK File Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pck-file
+          path: "${{ env.PCK_PATH }}"
+          
+  export_game_android:
+     runs-on: ubuntu-latest
+     steps:
+      - name: checkout
+        uses: actions/checkout@v4
+      - name: Setup Java & Android SDK
+        uses: android-actions/setup-android@v2
+      - run: mkdir ./pvz-project && mkdir releases
+      - name: Download Godot project artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: pvz-project
+          path: ./pvz-project
+      - run: cp assets/export_presets.cfg ./pvz-project
+      - name: export game
+        id: export
+        uses: firebelley/godot-export@v6.0.0
+        with:
+          godot_executable_download_url: https://github.com/godotengine/godot/releases/download/${{ env.GODOT_VERSION }}-stable/Godot_v${{ env.GODOT_VERSION }}-stable_linux.x86_64.zip
+          godot_export_templates_download_url: https://github.com/godotengine/godot/releases/download/${{ env.GODOT_VERSION }}-stable/Godot_v${{ env.GODOT_VERSION }}-stable_export_templates.tpz
+          relative_project_path: ./pvz-project/
+          relative_export_path: ./releases
+          archive_output: true
+          cache: true
+          presets_to_export: Android
+      - name: Upload Project Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android
+          path: ./releases/*.apk
+          
+  export_game_apple:
+     runs-on: macos-latest
+     steps:
+      - name: checkout
+        uses: actions/checkout@v4
+      - run: mkdir ./pvz-project && mkdir releases
+      - name: Download Godot project artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: pvz-project
+          path: ./pvz-project
+      - run: cp assets/export_presets.cfg ./pvz-project
+      - name: export game
+        id: export
+        uses: firebelley/godot-export@v6.0.0
+        with:
+          godot_executable_download_url: https://github.com/godotengine/godot/releases/download/${{ env.GODOT_VERSION }}-stable/Godot_v${{ env.GODOT_VERSION }}-stable_linux.x86_64.zip
+          godot_export_templates_download_url: https://github.com/godotengine/godot/releases/download/${{ env.GODOT_VERSION }}-stable/Godot_v${{ env.GODOT_VERSION }}-stable_export_templates.tpz
+          relative_project_path: ./pvz-project/
+          relative_export_path: ./releases
+          archive_output: true
+          cache: true
+          presets_to_export: 'macOS,iOS'
+      - name: Upload Project Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios
+          path: ./releases/*.ipa
+      - name: Upload Project Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos
+          path: ./releases/*.app
+          
+  export-linux:
+    runs-on: ubuntu-latest
+    needs:
+      - prepare-godot-project
+      - export_game_android
+      - export_game_apple
+    container:
+      image: debian:10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Download Export Template artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: export-templates
+          path: ./templates/
+          
+      - name: Download pck-file
+        uses: actions/download-artifact@v4
+        with:
+          name: pck-file
+          path: ./pck-file
+
+      - name: Unzip Export Template
+        run: |
+          find . -name "*.zip" && ls
+          sed -i.bak 's/deb.debian.org/archive.debian.org/g' /etc/apt/sources.list
+          apt update && apt install unzip wget curl git make dpkg -y
+          echo "export_templates内容" && ls ./templates
+          echo "pckfile内容" && ls ./pck-file
+#          unzip ./export-templates.zip -d ./export_templates
+#          unzip ./pck-file.zip -d pck-file
+        
+      - name: pre deb file
+        run: |
+          # 打包x86_64 deb
+          set -x
+          ls . && ls ./assets
+          mkdir -p deb/DEBIAN
+          mkdir -p deb/opt/apps/com.pvzhe.hybrid-remake/files
+          mkdir -p deb/opt/apps/com.pvzhe.hybrid-remake/entries/applications
+          mkdir -p deb/opt/apps/com.pvzhe.hybrid-remake/entries/icons/hicolor/128x128/apps
+          sed -i s@VERSION@$APP_VER@g assets/deb/control
+          sed -i s@amd64@ARCH@g assets/deb/info
+          sed -i s@VERSION@$APP_VER@g assets/deb/info
+          sed -i s@amd64@ARCH@g assets/deb/control
+          chmod +x assets/deb/run.sh
+          echo './linux_release.arm64 --main-pack 植物大战僵尸杂交版v0.3发布版.pck $@' >> assets/run.sh
+          PCK_PATH=$(find pck-file -name "*.pck" | head -n1)
+          cp $PCK_PATH deb/opt/apps/com.pvzhe.hybrid-remake/files
+          cp assets/deb/run.sh deb/opt/apps/com.pvzhe.hybrid-remake/files
+          chmod +x ./templates/linux_release*
+          cp ./templates/linux_release.x86_64 deb/opt/apps/com.pvzhe.hybrid-remake/files
+          cp assets/deb/com.pvzhe.hybrid-remake.png deb/opt/apps/com.pvzhe.hybrid-remake/entries/icons/hicolor/128x128/apps
+          cp assets/deb/control deb/DEBIAN
+          cp assets/deb/com.pvzhe.hybrid-remake.desktop deb/opt/apps/com.pvzhe.hybrid-remake/entries/applications
+          cp assets/deb/info deb/opt/apps/com.pvzhe.hybrid-remake
+          dpkg-deb -b deb/
+          mv deb.deb com.pvzhe.hybrid-remake_$APP_VER_amd64.deb
+          
+          # 打包arm64 deb
+          sed -i s@arm64@amd64@g deb/opt/apps/com.pvzhe.hybrid-remake/info
+          sed -i s@arm64@amd64@g deb/DEBIAN/control
+          rm deb/opt/apps/com.pvzhe.hybrid-remake/files/linux_release.x86_64
+          cp ./templates/linux_release.arm64 deb/opt/apps/com.pvzhe.hybrid-remake/files
+          sed -i s@x86_64@arm64@g deb/opt/apps/com.pvzhe.hybrid-remake/files/run.sh
+          dpkg-deb -b deb/
+          mv deb.deb com.pvzhe.hybrid-remake_$APP_VER_arm64.deb
+          mkdir releases && mv *.deb releases/
+          
+      - name: Download android release
+        uses: actions/download-artifact@v4
+        with:
+          name: android
+          path: ./releases 
+          
+      - name: Download other release
+        uses: actions/download-artifact@v4
+        with:
+          name: macos
+          path: ./releases        
+          
+      - name: Download other release
+        uses: actions/download-artifact@v4
+        with:
+          name: ios
+          path: ./releases           
+          
+      - name: Edit release add files
+        uses: irongut/EditRelease@v1.2.0
+        with:
+           id: v${{ env.APP_VER }}           # 指定已有 release 的 ID
+           files: ./releases/*              # 要添加的文件，相对路径
+           body: "Update Linux(x64,arm64),Android,MacOS,IOS release"
