@@ -118,11 +118,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: mkdir pck-file
-      - name: Download pck-file
-        uses: actions/download-artifact@v4
-        with:
-          name: pck-file
-          path: ./pck-file
       - run: |
           wget https://github.com/kero990/PvZ-Hybrid-remake-mobile/releases/download/v0.3/v0.3.zip
           unzip v0.3.zip
@@ -139,6 +134,11 @@ jobs:
           name: pvz-project1
           path: pvz-project/
           
+      - name: Upload PCK File Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pck-file1
+          path: "${{ env.PCK_PATH }}"
     
   export_game_android:
      runs-on: ubuntu-latest
@@ -230,7 +230,7 @@ jobs:
       - name: Download pck-file
         uses: actions/download-artifact@v4
         with:
-          name: pck-file
+          name: pck-file1
           path: ./pck-file
 
       - name: Unzip Export Template
