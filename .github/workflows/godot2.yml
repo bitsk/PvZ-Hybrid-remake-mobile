@@ -184,9 +184,10 @@ jobs:
           name: macos
           path: ./releases        
           
-      - name: Edit release add files
+      - name: Edit Release - Upload files
         uses: irongut/EditRelease@v1.2.0
         with:
-           id: v${{ env.APP_VER }}           # 指定已有 release 的 ID
-           files: ./releases/*              # 要添加的文件，相对路径
-           body: "Update Linux(x64,arm64),Android,MacOS,IOS release"
+          token: ${{ secrets.GITHUB_TOKEN }}
+          id: ${{ github.event.release.id }}
+          files: './releases/*'
+          body: 'Update Linux(x64,arm64),Android,MacOS release'
