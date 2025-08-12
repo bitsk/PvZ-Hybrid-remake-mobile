@@ -103,7 +103,7 @@ jobs:
           relative_export_path: ./releases
           presets_to_export: 'iOS' 
           export_debug: true
-      - run:  find releases/ -name "*.zip" -print0 | xargs -0 -I {} sh -c 'mv "$1" "releases/' sh {}
+      - run:  find releases/ -name "*.zip" -exec mv {} releases/ \;
       - name: Upload Project Artifact
         uses: actions/upload-artifact@v4
         with:
