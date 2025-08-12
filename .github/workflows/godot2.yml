@@ -102,18 +102,12 @@ jobs:
           relative_export_path: ./releases
           presets_to_export: 'iOS' 
           export_debug: true
-
-
-      - name: Upload Project Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ios
-          path: ./releases/*.ipa
+      - run:  find releases/ -name "*.zip" -print0 | xargs -0 -I {} sh -c 'mv "$1" "releases/$(basename "$1" .zip).app"' sh {}
       - name: Upload Project Artifact
         uses: actions/upload-artifact@v4
         with:
           name: macos
-          path: ./releases/*.zip
+          path: ./releases/*.app
           
   export-linux:
     runs-on: ubuntu-latest
@@ -126,14 +120,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      - run: mkdir templates && mkdir pck-file
-        
-      - name: Download Export Template artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: export-templates
-          path: ./templates/
-          
+      - run: mkdir pck-file
+                
       - name: Download pck-file
         uses: actions/download-artifact@v4
         with:
@@ -142,18 +130,15 @@ jobs:
 
       - name: Unzip Export Template
         run: |
-          find . -name "*.zip" && ls
           sed -i.bak 's/deb.debian.org/archive.debian.org/g' /etc/apt/sources.list
           apt update && apt install unzip wget curl git make dpkg -y
-          echo "export_templates内容" && ls ./templates
-          echo "pckfile内容" && ls ./pck-file
-#          unzip ./export-templates.zip -d ./export_templates
-#          unzip ./pck-file.zip -d pck-file
-        
+          wget https://github.com/godotengine/godot/releases/download/GODOT_VERSION-stable/Godot_vGODOT_VERSION-stable_export_templates.tpz
+          unzip Godot_vGODOT_VERSION-stable_export_templates.tpz
+          rm  *.tpz
+          cd templates && rm android* ios.zip macos.zip web* win* linux_debug* -f 
       - name: pre deb file
         run: |
           # 打包x86_64 deb
-          set -x
           ls . && ls ./assets
           mkdir -p deb/DEBIAN
           mkdir -p deb/opt/apps/com.pvzhe.hybrid-remake/files
@@ -198,12 +183,6 @@ jobs:
         with:
           name: macos
           path: ./releases        
-          
-      - name: Download other release
-        uses: actions/download-artifact@v4
-        with:
-          name: ios
-          path: ./releases           
           
       - name: Edit release add files
         uses: irongut/EditRelease@v1.2.0
