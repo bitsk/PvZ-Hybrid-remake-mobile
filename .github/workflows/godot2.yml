@@ -183,7 +183,7 @@ jobs:
         with:
           name: macos
           path: ./releases        
-          
+      - run: ls -al releases    
       - name: Get Release ID by tag
         id: get_release_id
         uses: actions/github-script@v6
