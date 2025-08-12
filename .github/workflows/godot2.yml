@@ -17,6 +17,7 @@ jobs:
           wget -q https://github.com/kero990/PvZ-Hybrid-remake-mobile/releases/download/v0.3/v0.3.zip
           unzip v0.3.zip
           PCK_PATH=$(find . -name "*.pck" | head -n1)
+          echo "PCK_PATH=$(find . -name "*.pck" | head -n1)" >> $GITHUB_ENV
           wget -q https://github.com/GDRETools/gdsdecomp/releases/download/v1.0.0-rc.3/GDRE_tools-v1.0.0-rc.3-linux.zip
           unzip GDRE_tools-v1.0.0-rc.3-linux.zip
           chmod +x gdre_tools.x86_64
