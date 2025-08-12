@@ -115,8 +115,6 @@ jobs:
       - prepare-godot-project
       - export_game_android
       - export_game_apple
-    container:
-      image: debian:10
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -184,23 +182,8 @@ jobs:
           name: macos
           path: ./releases        
       - run: ls -al releases    
-      - name: Get Release ID by tag
-        id: get_release_id
-        uses: actions/github-script@v6
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-             const tag = 'v0.3'
-             const release = await github.rest.repos.getReleaseByTag({
-               owner: context.repo.owner,
-               repo: context.repo.repo,
-               tag: tag
-             })
-             return release.data.id
-      - name: Tag and Release
-        uses: jasondavis303/tag-and-release-and-upload@v1.2.0
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          version: v${{ env.APP_VER }}
-          assets: '[ "./releases/*" ]'
-          overwrite: false          
+             
+      - name: Upload files to existing release
+        run: gh release upload v0.3 ./releases/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
