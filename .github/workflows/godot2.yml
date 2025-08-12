@@ -114,10 +114,36 @@ jobs:
           name: pck-file
           path: "${{ env.PCK_PATH }}"
           
+  prepare-godot-project1:
+    runs-on: ubuntu-latest
+    steps:
+      - run: mkdir pck-file
+      - name: Download pck-file
+        uses: actions/download-artifact@v4
+        with:
+          name: pck-file
+          path: ./pck-file
+      - run: |
+          wget https://github.com/kero990/PvZ-Hybrid-remake-mobile/releases/download/v0.3/v0.3.zip
+          unzip v0.3.zip
+          PCK_PATH=$(find pck-file -name "*.pck" | head -n1)
+          wget https://github.com/GDRETools/gdsdecomp/releases/download/v1.0.0/GDRE_tools-v1.0.0-linux.zip
+          unzip GDRE_tools-v1.0.0-linux.zip
+          mkdir pvz-project
+          mv $PCK_PATH ./pvz.pck
+          ./gdre_tools.x86_64 --headless --recover=./pvz.pck --output=./pvz-project
+          
+      - name: Upload Project Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pvz-project1
+          path: pvz-project/
+          
+    
   export_game_android:
      runs-on: ubuntu-latest
      needs:
-      - prepare-godot-project
+      - prepare-godot-project1
      steps:
       - name: checkout
         uses: actions/checkout@v4
@@ -127,7 +153,7 @@ jobs:
       - name: Download Godot project artifact
         uses: actions/download-artifact@v4
         with:
-          name: pvz-project
+          name: pvz-project1
           path: ./pvz-project
       - run: cp assets/export_presets.cfg ./pvz-project
       - name: export game
@@ -150,7 +176,7 @@ jobs:
   export_game_apple:
      runs-on: macos-latest
      needs:
-      - prepare-godot-project
+      - prepare-godot-project1
      steps:
       - name: checkout
         uses: actions/checkout@v4
@@ -158,7 +184,7 @@ jobs:
       - name: Download Godot project artifact
         uses: actions/download-artifact@v4
         with:
-          name: pvz-project
+          name: pvz-project1
           path: ./pvz-project
       - run: cp assets/export_presets.cfg ./pvz-project
       - name: export game
@@ -186,7 +212,7 @@ jobs:
   export-linux:
     runs-on: ubuntu-latest
     needs:
-      - prepare-godot-project
+      - prepare-godot-project1
       - export_game_android
       - export_game_apple
     container:
