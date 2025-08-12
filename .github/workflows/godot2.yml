@@ -94,6 +94,7 @@ jobs:
           
       - name: export game ios
         uses: firebelley/godot-export@v6.0.0
+        if: false #由于没有苹果开发者账户，无法导出ios版本
         with:
           godot_executable_download_url: https://github.com/godotengine/godot/releases/download/${{ env.GODOT_VERSION }}-stable/Godot_v${{ env.GODOT_VERSION }}-stable_macos.universal.zip
           godot_export_templates_download_url: https://github.com/godotengine/godot/releases/download/${{ env.GODOT_VERSION }}-stable/Godot_v${{ env.GODOT_VERSION }}-stable_export_templates.tpz
