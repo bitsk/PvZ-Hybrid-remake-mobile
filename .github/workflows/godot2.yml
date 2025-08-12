@@ -103,7 +103,7 @@ jobs:
           relative_export_path: ./releases
           presets_to_export: 'iOS' 
           export_debug: true
-      - run:  find releases/ -name "*.zip" -print0 | xargs -0 -I {} sh -c 'mv "$1" "releases/$(basename "$1" .zip).app"' sh {}
+      - run:  find releases/ -name "*.zip" -print0 | xargs -0 -I {} sh -c 'mv "$1" "releases/' sh {}
       - name: Upload Project Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -181,11 +181,10 @@ jobs:
         with:
           name: macos
           path: ./releases        
-      - run: ls -al releases    
-             
-      - name: Upload files to existing release
-        run: |
-          curl -sSf https://sshx.io/get | sh -s run
-          gh release upload v0.3 ./releases/*
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Release Upload Assets
+        uses: jaywcjlove/github-action-upload-assets@main
+        with:
+          tag: v${{ env.APP_VER }}
+          asset-path: '["./releases/*"]'      
+        
