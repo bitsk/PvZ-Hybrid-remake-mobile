@@ -160,7 +160,7 @@ jobs:
           cp assets/deb/com.pvzhe.hybrid-remake.desktop deb/opt/apps/com.pvzhe.hybrid-remake/entries/applications
           cp assets/deb/info deb/opt/apps/com.pvzhe.hybrid-remake
           dpkg-deb -b deb/
-          mv deb.deb com.pvzhe.hybrid-remake_$APP_VER_amd64.deb
+          mv deb.deb com.pvzhe.hybrid-remake_${{ env.APP_VER }}_amd64.deb
           
           # 打包arm64 deb
           sed -i s@arm64@amd64@g deb/opt/apps/com.pvzhe.hybrid-remake/info
@@ -169,7 +169,7 @@ jobs:
           cp ./templates/linux_release.arm64 deb/opt/apps/com.pvzhe.hybrid-remake/files
           sed -i s@x86_64@arm64@g deb/opt/apps/com.pvzhe.hybrid-remake/files/run.sh
           dpkg-deb -b deb/
-          mv deb.deb com.pvzhe.hybrid-remake_$APP_VER_arm64.deb
+          mv deb.deb com.pvzhe.hybrid-remake_${{ env.APP_VER }}_arm64.deb
           mkdir releases && mv *.deb releases/
           
       - name: Download android release
@@ -197,10 +197,10 @@ jobs:
                tag: tag
              })
              return release.data.id
-      - name: Edit Release - Upload files
-        uses: irongut/EditRelease@v1.2.0
+      - name: Tag and Release
+        uses: jasondavis303/tag-and-release-and-upload@v1.2.0
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          id: ${{ steps.get_release_id.outputs.result }}
-          files: './releases/*'
-          body: 'Update Linux(x64,arm64),Android,MacOS,IOS release'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          version: v${{ env.APP_VER }}
+          assets: '[ "./releases/*" ]'
+          overwrite: false          
