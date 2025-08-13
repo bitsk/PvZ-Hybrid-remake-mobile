@@ -116,6 +116,8 @@ jobs:
       - prepare-godot-project
       - export_game_android
       - export_game_apple
+    container:
+      image: debian:10
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -129,9 +131,10 @@ jobs:
 
       - name: Unzip Export Template
         run: |
-          sudo apt update && sudo apt install unzip wget curl git make dpkg -y
-          wget https://github.com/godotengine/godot/releases/download/$GODOT_VERSION-stable/Godot_v$GODOT_VERSION-stable_export_templates.tpz
-          unzip Godot_v$GODOT_VERSION-stable_export_templates.tpz
+          sed -i s@deb.debian@archive.debian@g /etc/apt/sources.list
+          apt update && apt install unzip wget curl git make dpkg -y
+          wget https://github.com/godotengine/godot/releases/download/${{ env.GODOT_VERSION }}-stable/Godot_v${{ env.GODOT_VERSION }}-stable_export_templates.tpz
+          unzip Godot_v${{ env.GODOT_VERSION }}-stable_export_templates.tpz
           rm  *.tpz
           cd templates && rm android* ios.zip macos.zip web* win* linux_debug* -f 
       - name: pre deb file
@@ -161,8 +164,8 @@ jobs:
           mv deb.deb com.pvzhe.hybrid-remake_${{ env.APP_VER }}_amd64.deb
           
           # 打包arm64 deb
-          sed -i s@arm64@amd64@g deb/opt/apps/com.pvzhe.hybrid-remake/info
-          sed -i s@arm64@amd64@g deb/DEBIAN/control
+          sed -i s@amd64@arm64@g deb/opt/apps/com.pvzhe.hybrid-remake/info
+          sed -i s@amd64@arm64@g deb/DEBIAN/control
           rm deb/opt/apps/com.pvzhe.hybrid-remake/files/linux_release.x86_64
           cp ./templates/linux_release.arm64 deb/opt/apps/com.pvzhe.hybrid-remake/files
           sed -i s@x86_64@arm64@g deb/opt/apps/com.pvzhe.hybrid-remake/files/run.sh
