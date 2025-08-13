@@ -185,7 +185,13 @@ jobs:
           name: macos
           path: ./releases        
           
-      - name: Upload files to existing release
-        run: gh release upload v0.3 ./releases/*
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload Release    
+      - uses: ncipollo/release-action@v1
+        with:
+           allowUpdates: true
+           artifacts: >
+             ./releases/*
+           body: "由官方发布版移植而来，包括linux(arm64,x86_64)，Android和MacOS，因为没有开发者账户，所以暂时没有IOS"
+           name: v${{ env.APP_VER }}
+           tag: v${{ env.APP_VER }}
+           token: ${{ secrets.GITHUB_TOKEN }}
