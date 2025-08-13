@@ -186,7 +186,7 @@ jobs:
           path: ./releases        
           
       - name: Upload Release    
-      - uses: ncipollo/release-action@v1
+        uses: ncipollo/release-action@v1
         with:
            allowUpdates: true
            artifacts: >
