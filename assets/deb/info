@@ -1,16 +1,17 @@
 {
-“appid”: “com.pvzhe.hybrid-remake”,
-“name”: “植物大战僵尸：杂交版重置版”,
-“version”: “VERSION”,
-“arch”: “ARCH”,
-“permissions”: {
-“autostart”: true,
-“notification”: true,
-“trayicon”: true,
-“clipboard”: true,
-“account”: true,
-“bluetooth”: true,
-“camera”: true,
-“audio_record”: true,
-“installed_apps”: true
+  “appid”: “com.pvzhe.hybrid-remake”,
+  “name”: “植物大战僵尸：杂交版重置版”,
+  “version”: “VERSION”,
+  “arch”: “ARCH”,
+  “permissions”: {
+    “autostart”: true,
+    “notification”: true,
+    “trayicon”: true,
+    “clipboard”: true,
+    “account”: true,
+    “bluetooth”: true,
+    “camera”: true,
+    “audio_record”: true,
+    “installed_apps”: true
+  }
 }
