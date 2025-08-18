@@ -5,7 +5,7 @@ on:
 env:
   GODOT_VERSION: 4.4
   APP_NAME: "植物大战僵尸杂交版"
-  APP_VER: "0.3"
+  APP_VER: "0.4"
 permissions:
   contents: write
 jobs:
@@ -15,8 +15,8 @@ jobs:
     steps:
       - run: mkdir pck-file
       - run: |
-          wget -q https://github.com/kero990/PvZ-Hybrid-remake-mobile/releases/download/v0.3/v0.3.zip
-          unzip v0.3.zip
+          wget -q https://f.odata.cc/8eUFGPk3Y0/植物大战僵尸杂交版v0.4发布兼容版.zip
+          unzip 植物大战僵尸杂交版v0.4发布兼容版.zip
           PCK_PATH=$(find . -name "*.pck" | head -n1)
           echo "PCK_PATH=$(find . -name "*.pck" | head -n1)" >> $GITHUB_ENV
           wget -q https://github.com/GDRETools/gdsdecomp/releases/download/v1.0.0-rc.3/GDRE_tools-v1.0.0-rc.3-linux.zip
@@ -42,6 +42,7 @@ jobs:
      runs-on: ubuntu-latest
      needs:
       - prepare-godot-project
+     if: false # 此版本官方已放出apk，不再导出android
      steps:
       - name: checkout
         uses: actions/checkout@v4
@@ -191,7 +192,7 @@ jobs:
            allowUpdates: true
            artifacts: >
              ./releases/*
-           body: "由官方发布版移植而来，包括linux(arm64,x86_64)，Android和MacOS，因为没有开发者账户，所以暂时没有IOS"
-           name: v${{ env.APP_VER }}
-           tag: v${{ env.APP_VER }}
+           body: "由官方发布版移植而来，包括linux(arm64,x86_64)，Android和MacOS，因为没有开发者账户，所以暂时没有IOS。0.4版本官方已放出apk，不再导出android"
+           name: ${{ env.APP_VER }}
+           tag: ${{ env.APP_VER }}
            token: ${{ secrets.GITHUB_TOKEN }}
