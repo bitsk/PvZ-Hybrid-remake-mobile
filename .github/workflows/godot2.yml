@@ -25,8 +25,8 @@ jobs:
           rm 植物大战僵尸杂交版v0.4发布版.*
           #PCK_PATH=$(find . -name "*.pck" | head -n1)
           #echo "PCK_PATH=$(find . -name "*.pck" | head -n1)" >> $GITHUB_ENV
-          wget -q https://github.com/GDRETools/gdsdecomp/releases/download/v1.0.0-rc.3/GDRE_tools-v1.0.0-rc.3-linux.zip
-          unzip GDRE_tools-v1.0.0-rc.3-linux.zip
+          wget -q https://github.com/GDRETools/gdsdecomp/releases/download/v1.0.0/GDRE_tools-v1.0.0-linux.zip
+          unzip GDRE_tools-v1.0.0-linux.zip
           chmod +x gdre_tools.x86_64
           mkdir -p pvz-project pvz-project-gl
           # 1) 使用 GDRE Tools 解包（解密）两个 PCK 到独立目录
