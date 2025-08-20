@@ -15,17 +15,26 @@ jobs:
     steps:
       - run: mkdir pck-file
       - run: |
-          wget -q https://f.odata.cc/get/jpshVEFJiK/植物大战僵尸杂交版v0.4发布版.apk
-          mv 植物大战僵尸杂交版v0.4发布版.apk 植物大战僵尸杂交版v0.4发布版.zip
+          wget -q https://blob.bits.ink/pvz/v0.4/植物大战僵尸杂交版v0.4发布版.zip
+          wget -q https://blob.bits.ink/pvz/v0.4/植物大战僵尸杂交版v0.4发布兼容版.zip
           unzip 植物大战僵尸杂交版v0.4发布版.zip
-          mv assets pvz-project
+          mv 植物大战僵尸杂交版v0.4发布版.pck pvz.pck
+          rm 植物大战僵尸杂交版v0.4发布版.*
+          unzip 植物大战僵尸杂交版v0.4发布兼容版.zip
+          mv 植物大战僵尸杂交版v0.4发布版.pck pvz_gl.pck
+          rm 植物大战僵尸杂交版v0.4发布版.*
           #PCK_PATH=$(find . -name "*.pck" | head -n1)
           #echo "PCK_PATH=$(find . -name "*.pck" | head -n1)" >> $GITHUB_ENV
           wget -q https://github.com/GDRETools/gdsdecomp/releases/download/v1.0.0-rc.3/GDRE_tools-v1.0.0-rc.3-linux.zip
           unzip GDRE_tools-v1.0.0-rc.3-linux.zip
           chmod +x gdre_tools.x86_64
-          ./gdre_tools.x86_64 --headless --pck-create=./pvz-project --output=./pvz.pck --pck-version=2 --pck-engine-version=4.4.1
-          rm $PCK_PATH
+          mkdir -p pvz-project pvz-project-gles
+          # 1) 使用 GDRE Tools 解包（解密）两个 PCK 到独立目录
+          ./gdre_tools.x86_64 --headless --pck-extract=./pvz.pck --output=./pvz-project --key=${{ secrets.AES_KEY }}
+          ./gdre_tools.x86_64 --headless --pck-extract=./pvz_gles.pck --output=./pvz-project-gles --key=${{ secrets.AES_KEY }}
+          # 2) 分别重新打包生成两个 PCK（发布版与发布兼容版）
+          ./gdre_tools.x86_64 --headless --pck-create=./pvz-project --output=./pvz.pck --pck-version=2 --pck-engine-version=${{ env.GODOT_VERSION }} --key=${{ secrets.AES_KEY }}
+          ./gdre_tools.x86_64 --headless --pck-create=./pvz-project-gles --output=./pvz_gles.pck --pck-version=2 --pck-engine-version=${{ env.GODOT_VERSION }} --key=${{ secrets.AES_KEY }}
       - name: Upload Project Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -35,8 +44,10 @@ jobs:
       - name: Upload PCK File Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: pck-file
-          path: ./pvz.pck
+          name: pck-files
+          path: |
+            ./pvz.pck
+            ./pvz_gl.pck
     
   export_game_android:
      runs-on: ubuntu-latest
@@ -126,52 +137,67 @@ jobs:
       - name: Download pck-file
         uses: actions/download-artifact@v4
         with:
-          name: pck-file
+          name: pck-files
           path: ./pck-file
 
       - name: Unzip Export Template
         run: |
           sed -i s@deb.debian@archive.debian@g /etc/apt/sources.list
-          apt update && apt install unzip wget curl git make dpkg -y
+          apt update && apt install unzip wget curl git make dpkg p7zip-full -y
           wget https://github.com/godotengine/godot/releases/download/${{ env.GODOT_VERSION }}-stable/Godot_v${{ env.GODOT_VERSION }}-stable_export_templates.tpz
           unzip Godot_v${{ env.GODOT_VERSION }}-stable_export_templates.tpz
           rm  *.tpz
           cd templates && rm android* ios.zip macos.zip web* win* linux_debug* -f 
+          cd ..
+
+          wget https://gitee.com/openkylin/godot-riscv/releases/download/4.4/godot.linuxbsd.template_release.rv64.llvm.7z
+          7z x godot.linuxbsd.template_release.rv64.llvm.7z
+          # 将 RISC-V 模板放入 templates 目录并统一命名
+          mv godot.linuxbsd.template_release.rv64.llvm ./templates/linux_release.rv64
       - name: pre deb file
         run: |
-          # 打包x86_64 deb
+          set -e
           ls . && ls ./assets
-          mkdir -p deb/DEBIAN
-          mkdir -p deb/opt/apps/com.pvzhe.hybrid-remake/files
-          mkdir -p deb/opt/apps/com.pvzhe.hybrid-remake/entries/applications
-          mkdir -p deb/opt/apps/com.pvzhe.hybrid-remake/entries/icons/hicolor/128x128/apps
-          sed -i s@VERSION@$APP_VER@g assets/deb/control
-          sed -i s@ARCH@amd64@g assets/deb/info
-          sed -i s@VERSION@$APP_VER@g assets/deb/info
-          sed -i s@ARCH@amd64@g assets/deb/control
-          chmod +x assets/deb/run.sh
-          echo './linux_release.x86_64 --main-pack pvz.pck $@' >> assets/deb/run.sh
-          PCK_PATH=$(find pck-file -name "*.pck" | head -n1)
-          cp $PCK_PATH deb/opt/apps/com.pvzhe.hybrid-remake/files
-          cp assets/deb/run.sh deb/opt/apps/com.pvzhe.hybrid-remake/files
           chmod +x ./templates/linux_release*
-          cp ./templates/linux_release.x86_64 deb/opt/apps/com.pvzhe.hybrid-remake/files
-          cp assets/deb/com.pvzhe.hybrid-remake.png deb/opt/apps/com.pvzhe.hybrid-remake/entries/icons/hicolor/128x128/apps
-          cp assets/deb/control deb/DEBIAN
-          cp assets/deb/com.pvzhe.hybrid-remake.desktop deb/opt/apps/com.pvzhe.hybrid-remake/entries/applications
-          cp assets/deb/info deb/opt/apps/com.pvzhe.hybrid-remake
-          dpkg-deb -b deb/
-          mv deb.deb com.pvzhe.hybrid-remake_${{ env.APP_VER }}_amd64.deb
-          
-          # 打包arm64 deb
-          sed -i s@amd64@arm64@g deb/opt/apps/com.pvzhe.hybrid-remake/info
-          sed -i s@amd64@arm64@g deb/DEBIAN/control
-          rm deb/opt/apps/com.pvzhe.hybrid-remake/files/linux_release.x86_64
-          cp ./templates/linux_release.arm64 deb/opt/apps/com.pvzhe.hybrid-remake/files
-          sed -i s@x86_64@arm64@g deb/opt/apps/com.pvzhe.hybrid-remake/files/run.sh
-          dpkg-deb -b deb/
-          mv deb.deb com.pvzhe.hybrid-remake_${{ env.APP_VER }}_arm64.deb
-          mkdir releases && mv *.deb releases/
+          mkdir -p releases
+          # 3) 为 amd64/arm64/riscv64 三个架构分别打包（发布版与兼容版）
+          for arch in amd64 arm64 riscv64; do
+            if [ "$arch" = "amd64" ]; then bin_name=linux_release.x86_64; fi
+            if [ "$arch" = "arm64" ]; then bin_name=linux_release.arm64; fi
+            if [ "$arch" = "riscv64" ]; then bin_name=linux_release.rv64; fi
+            for flavor in "" "_gles"; do
+              workdir=deb_${arch}${flavor}
+              rm -rf "$workdir"
+              mkdir -p "$workdir/DEBIAN"
+              mkdir -p "$workdir/opt/apps/com.pvzhe.hybrid-remake/files"
+              mkdir -p "$workdir/opt/apps/com.pvzhe.hybrid-remake/entries/applications"
+              mkdir -p "$workdir/opt/apps/com.pvzhe.hybrid-remake/entries/icons/hicolor/128x128/apps"
+              # control/info 基于模板复制后替换
+              cp assets/deb/control "$workdir/DEBIAN/control"
+              cp assets/deb/info "$workdir/opt/apps/com.pvzhe.hybrid-remake/info"
+              sed -i s@VERSION@$APP_VER@g "$workdir/DEBIAN/control"
+              sed -i s@VERSION@$APP_VER@g "$workdir/opt/apps/com.pvzhe.hybrid-remake/info"
+              sed -i s@ARCH@${arch}@g "$workdir/DEBIAN/control"
+              sed -i s@ARCH@${arch}@g "$workdir/opt/apps/com.pvzhe.hybrid-remake/info"
+              # 复制资源与桌面文件
+              cp assets/deb/com.pvzhe.hybrid-remake.png "$workdir/opt/apps/com.pvzhe.hybrid-remake/entries/icons/hicolor/128x128/apps"
+              cp assets/deb/com.pvzhe.hybrid-remake.desktop "$workdir/opt/apps/com.pvzhe.hybrid-remake/entries/applications"
+              # 复制运行脚本并追加执行命令
+              cp assets/deb/run.sh "$workdir/opt/apps/com.pvzhe.hybrid-remake/files/run.sh"
+              chmod +x "$workdir/opt/apps/com.pvzhe.hybrid-remake/files/run.sh"
+              echo "./${bin_name} --main-pack pvz${flavor}.pck \$@" >> "$workdir/opt/apps/com.pvzhe.hybrid-remake/files/run.sh"
+              # 复制对应架构引擎模板与 PCK
+              cp ./templates/${bin_name} "$workdir/opt/apps/com.pvzhe.hybrid-remake/files"
+              chmod +x "$workdir/opt/apps/com.pvzhe.hybrid-remake/files/${bin_name}"
+              cp ./pck-file/pvz${flavor}.pck "$workdir/opt/apps/com.pvzhe.hybrid-remake/files"
+              # 构建 deb
+              dpkg-deb -b "$workdir"
+              out_name="com.pvzhe.hybrid-remake_${APP_VER}_${arch}"
+              if [ "$flavor" = "_gles" ]; then out_name="${out_name}_gles"; fi
+              mv ${workdir}.deb ${out_name}.deb
+              mv ${out_name}.deb releases/
+            done
+          done
           
       - name: Download android release
         uses: actions/download-artifact@v4
