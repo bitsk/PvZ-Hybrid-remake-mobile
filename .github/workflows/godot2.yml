@@ -28,13 +28,13 @@ jobs:
           wget -q https://github.com/GDRETools/gdsdecomp/releases/download/v1.0.0-rc.3/GDRE_tools-v1.0.0-rc.3-linux.zip
           unzip GDRE_tools-v1.0.0-rc.3-linux.zip
           chmod +x gdre_tools.x86_64
-          mkdir -p pvz-project pvz-project-gles
+          mkdir -p pvz-project pvz-project-gl
           # 1) 使用 GDRE Tools 解包（解密）两个 PCK 到独立目录
           ./gdre_tools.x86_64 --headless --pck-extract=./pvz.pck --output=./pvz-project --key=${{ secrets.AES_KEY }}
-          ./gdre_tools.x86_64 --headless --pck-extract=./pvz_gles.pck --output=./pvz-project-gles --key=${{ secrets.AES_KEY }}
+          ./gdre_tools.x86_64 --headless --pck-extract=./pvz_gl.pck --output=./pvz-project-gl --key=${{ secrets.AES_KEY }}
           # 2) 分别重新打包生成两个 PCK（发布版与发布兼容版）
           ./gdre_tools.x86_64 --headless --pck-create=./pvz-project --output=./pvz.pck --pck-version=2 --pck-engine-version=${{ env.GODOT_VERSION }} --key=${{ secrets.AES_KEY }}
-          ./gdre_tools.x86_64 --headless --pck-create=./pvz-project-gles --output=./pvz_gles.pck --pck-version=2 --pck-engine-version=${{ env.GODOT_VERSION }} --key=${{ secrets.AES_KEY }}
+          ./gdre_tools.x86_64 --headless --pck-create=./pvz-project-gl --output=./pvz_gl.pck --pck-version=2 --pck-engine-version=${{ env.GODOT_VERSION }} --key=${{ secrets.AES_KEY }}
       - name: Upload Project Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -165,7 +165,7 @@ jobs:
             if [ "$arch" = "amd64" ]; then bin_name=linux_release.x86_64; fi
             if [ "$arch" = "arm64" ]; then bin_name=linux_release.arm64; fi
             if [ "$arch" = "riscv64" ]; then bin_name=linux_release.rv64; fi
-            for flavor in "" "_gles"; do
+            for flavor in "" "_gl"; do
               workdir=deb_${arch}${flavor}
               rm -rf "$workdir"
               mkdir -p "$workdir/DEBIAN"
@@ -193,7 +193,7 @@ jobs:
               # 构建 deb
               dpkg-deb -b "$workdir"
               out_name="com.pvzhe.hybrid-remake_${APP_VER}_${arch}"
-              if [ "$flavor" = "_gles" ]; then out_name="${out_name}_gles"; fi
+              if [ "$flavor" = "_gl" ]; then out_name="${out_name}_gl"; fi
               mv ${workdir}.deb ${out_name}.deb
               mv ${out_name}.deb releases/
             done
