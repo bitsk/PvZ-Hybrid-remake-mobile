@@ -23,9 +23,9 @@ jobs:
           unzip GDRE_tools-v1.0.0-rc.3-linux.zip
           chmod +x gdre_tools.x86_64
           mkdir pvz-project
-          cp $PCK_PATH ./pvz.pck
-          ./gdre_tools.x86_64 --headless --recover=./pvz.pck --output=./pvz-project
-          
+          ./gdre_tools.x86_64 --headless --recover=$PCK_PATH --output=./pvz-project --key=BDEC50605CD551C59B47F8CE8292D3A8AB30DF851556C05657089816430AB3E1
+          ./gdre_tools.x86_64 --headless --pck-create=./pvz-project --output=./pvz.pck
+          rm $PCK_PATH
       - name: Upload Project Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -36,7 +36,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: pck-file
-          path: "${{ env.PCK_PATH }}"
+          path: ./pvz.pck
     
   export_game_android:
      runs-on: ubuntu-latest
@@ -151,7 +151,7 @@ jobs:
           sed -i s@VERSION@$APP_VER@g assets/deb/info
           sed -i s@ARCH@amd64@g assets/deb/control
           chmod +x assets/deb/run.sh
-          echo './linux_release.x86_64 --main-pack 植物大战僵尸杂交版v0.3发布版.pck $@' >> assets/deb/run.sh
+          echo './linux_release.x86_64 --main-pack pvz.pck $@' >> assets/deb/run.sh
           PCK_PATH=$(find pck-file -name "*.pck" | head -n1)
           cp $PCK_PATH deb/opt/apps/com.pvzhe.hybrid-remake/files
           cp assets/deb/run.sh deb/opt/apps/com.pvzhe.hybrid-remake/files
