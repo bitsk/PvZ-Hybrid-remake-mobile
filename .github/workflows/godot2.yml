@@ -62,8 +62,10 @@ jobs:
           
           # 2) 下载 Godot 模板
           Invoke-WebRequest -Uri "https://github.com/godotengine/godot/releases/download/${{ env.GODOT_VERSION }}-stable/Godot_v${{ env.GODOT_VERSION }}-stable_export_templates.tpz" -OutFile "templates.tpz"
-          Expand-Archive -Path "templates.tpz" -DestinationPath "." -Force
-          Remove-Item -Path "templates.tpz" -Force
+          # 重命名 .tpz 为 .zip 以便 PowerShell 能够解压
+          Rename-Item -Path "templates.tpz" -NewName "templates.zip"
+          Expand-Archive -Path "templates.zip" -DestinationPath "." -Force
+          Remove-Item -Path "templates.zip" -Force
           Remove-Item -Path "templates\android*", "templates\ios.zip", "templates\macos.zip", "templates\web*", "templates\win*", "templates\linux_debug*" -Force -ErrorAction SilentlyContinue
           
           # 下载 RISC-V 模板
