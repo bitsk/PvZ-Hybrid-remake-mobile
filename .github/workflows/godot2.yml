@@ -18,7 +18,7 @@ jobs:
           wget -q https://blob.bits.ink/pvz/v0.4/植物大战僵尸杂交版v0.4发布兼容版.zip
           unzip 植物大战僵尸杂交版v0.4发布版.zip
           mv 植物大战僵尸杂交版v0.4发布版.pck pvz.pck
-          rm 植物大战僵尸杂交版v0.4发布*
+          rm 植物大战僵尸杂交版v0.4发布版.*
           unzip 植物大战僵尸杂交版v0.4发布兼容版.zip
           mv 植物大战僵尸杂交版v0.4发布版.pck pvz_gl.pck
           rm 植物大战僵尸杂交版v0.4发布*
