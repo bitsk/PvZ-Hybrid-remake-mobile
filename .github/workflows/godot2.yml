@@ -13,41 +13,63 @@ jobs:
   prepare-godot-project:
     runs-on: ubuntu-latest
     steps:
-      - run: mkdir pck-file
       - run: |
           wget -q https://blob.bits.ink/pvz/v0.4/植物大战僵尸杂交版v0.4发布版.zip
           wget -q https://blob.bits.ink/pvz/v0.4/植物大战僵尸杂交版v0.4发布兼容版.zip
           unzip 植物大战僵尸杂交版v0.4发布版.zip
           mv 植物大战僵尸杂交版v0.4发布版.pck pvz.pck
-          rm 植物大战僵尸杂交版v0.4发布版.*
+          rm 植物大战僵尸杂交版v0.4发布*
           unzip 植物大战僵尸杂交版v0.4发布兼容版.zip
           mv 植物大战僵尸杂交版v0.4发布版.pck pvz_gl.pck
-          rm 植物大战僵尸杂交版v0.4发布版.*
+          rm 植物大战僵尸杂交版v0.4发布*
           #PCK_PATH=$(find . -name "*.pck" | head -n1)
           #echo "PCK_PATH=$(find . -name "*.pck" | head -n1)" >> $GITHUB_ENV
+          
+          # 下载 GDRE Tools
           wget -q https://github.com/GDRETools/gdsdecomp/releases/download/v1.0.0/GDRE_tools-v1.0.0-linux.zip
           unzip GDRE_tools-v1.0.0-linux.zip
           chmod +x gdre_tools.x86_64
           mkdir -p pvz-project pvz-project-gl
+          
           # 1) 使用 GDRE Tools 解包（解密）两个 PCK 到独立目录
           ./gdre_tools.x86_64 --headless --extract=./pvz.pck --output=./pvz-project --key=${{ secrets.AES_KEY }}
           ./gdre_tools.x86_64 --headless --extract=./pvz_gl.pck --output=./pvz-project-gl --key=${{ secrets.AES_KEY }}
-          # 2) 分别重新打包生成两个 PCK（发布版与发布兼容版）
-          ./gdre_tools.x86_64 --headless --pck-create=./pvz-project --output=./pvz.pck --pck-version=2 --pck-engine-version=${{ env.GODOT_VERSION }} --key=${{ secrets.AES_KEY }}
-          ./gdre_tools.x86_64 --headless --pck-create=./pvz-project-gl --output=./pvz_gl.pck --pck-version=2 --pck-engine-version=${{ env.GODOT_VERSION }} --key=${{ secrets.AES_KEY }}
+          
+          # 2) 下载 Godot 模板
+          apt update && apt install p7zip-full -y
+          wget https://github.com/godotengine/godot/releases/download/${{ env.GODOT_VERSION }}-stable/Godot_v${{ env.GODOT_VERSION }}-stable_export_templates.tpz
+          unzip Godot_v${{ env.GODOT_VERSION }}-stable_export_templates.tpz
+          rm *.tpz
+          cd templates && rm android* ios.zip macos.zip web* win* linux_debug* -f 
+          cd ..
+          
+          wget https://gitee.com/openkylin/godot-riscv/releases/download/4.4/godot.linuxbsd.template_release.rv64.llvm.7z
+          7z x godot.linuxbsd.template_release.rv64.llvm.7z
+          mv godot.linuxbsd.template_release.rv64.llvm ./templates/linux_release.rv64
+          chmod +x ./templates/linux_release*
+          
+          # 3) 为不同架构直接生成嵌入 PCK 的可执行文件
+          mkdir -p embedded-binaries
+          for arch in amd64 arm64 riscv64; do
+            if [ "$arch" = "amd64" ]; then template_name=linux_release.x86_64; fi
+            if [ "$arch" = "arm64" ]; then template_name=linux_release.arm64; fi
+            if [ "$arch" = "riscv64" ]; then template_name=linux_release.rv64; fi
+            
+            ./gdre_tools.x86_64 --headless --pck-create=./pvz-project --output=./embedded-binaries/${template_name} --pck-version=2 --pck-engine-version=${{ env.GODOT_VERSION }} --embed=./templates/${template_name}
+            ./gdre_tools.x86_64 --headless --pck-create=./pvz-project-gl --output=./embedded-binaries/${template_name}_gl --pck-version=2 --pck-engine-version=${{ env.GODOT_VERSION }} --embed=./templates/${template_name}
+          done
+          
       - name: Upload Project Artifact
         uses: actions/upload-artifact@v4
         with:
           name: pvz-project
           path: pvz-project/
           
-      - name: Upload PCK File Artifact
+      - name: Upload Embedded Binaries
         uses: actions/upload-artifact@v4
         with:
-          name: pck-files
-          path: |
-            ./pvz.pck
-            ./pvz_gl.pck
+          name: embedded-binaries
+          path: embedded-binaries/
     
   export_game_android:
      runs-on: ubuntu-latest
@@ -132,35 +154,22 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      - run: mkdir pck-file
                 
-      - name: Download pck-file
+      - name: Download Embedded Binaries
         uses: actions/download-artifact@v4
         with:
-          name: pck-files
-          path: ./pck-file
+          name: embedded-binaries
+          path: ./embedded-binaries
 
-      - name: Unzip Export Template
+      - name: Create deb packages
         run: |
           sed -i s@deb.debian@archive.debian@g /etc/apt/sources.list
-          apt update && apt install unzip wget curl git make dpkg p7zip-full -y
-          wget https://github.com/godotengine/godot/releases/download/${{ env.GODOT_VERSION }}-stable/Godot_v${{ env.GODOT_VERSION }}-stable_export_templates.tpz
-          unzip Godot_v${{ env.GODOT_VERSION }}-stable_export_templates.tpz
-          rm  *.tpz
-          cd templates && rm android* ios.zip macos.zip web* win* linux_debug* -f 
-          cd ..
-
-          wget https://gitee.com/openkylin/godot-riscv/releases/download/4.4/godot.linuxbsd.template_release.rv64.llvm.7z
-          7z x godot.linuxbsd.template_release.rv64.llvm.7z
-          # 将 RISC-V 模板放入 templates 目录并统一命名
-          mv godot.linuxbsd.template_release.rv64.llvm ./templates/linux_release.rv64
-      - name: pre deb file
-        run: |
+          apt update && apt install make dpkg -y
           set -e
           ls . && ls ./assets
-          chmod +x ./templates/linux_release*
+          chmod +x ./embedded-binaries/*
           mkdir -p releases
-          # 3) 为 amd64/arm64/riscv64 三个架构分别打包（发布版与兼容版）
+          # 为 amd64/arm64/riscv64 三个架构分别打包（发布版与兼容版）
           for arch in amd64 arm64 riscv64; do
             if [ "$arch" = "amd64" ]; then bin_name=linux_release.x86_64; fi
             if [ "$arch" = "arm64" ]; then bin_name=linux_release.arm64; fi
@@ -182,14 +191,13 @@ jobs:
               # 复制资源与桌面文件
               cp assets/deb/com.pvzhe.hybrid-remake.png "$workdir/opt/apps/com.pvzhe.hybrid-remake/entries/icons/hicolor/128x128/apps"
               cp assets/deb/com.pvzhe.hybrid-remake.desktop "$workdir/opt/apps/com.pvzhe.hybrid-remake/entries/applications"
-              # 复制运行脚本并追加执行命令
+              # 复制运行脚本（不需要 --main-pack 参数，因为 PCK 已嵌入）
               cp assets/deb/run.sh "$workdir/opt/apps/com.pvzhe.hybrid-remake/files/run.sh"
               chmod +x "$workdir/opt/apps/com.pvzhe.hybrid-remake/files/run.sh"
-              echo "./${bin_name} --main-pack pvz${flavor}.pck \$@" >> "$workdir/opt/apps/com.pvzhe.hybrid-remake/files/run.sh"
-              # 复制对应架构引擎模板与 PCK
-              cp ./templates/${bin_name} "$workdir/opt/apps/com.pvzhe.hybrid-remake/files"
-              chmod +x "$workdir/opt/apps/com.pvzhe.hybrid-remake/files/${bin_name}"
-              cp ./pck-file/pvz${flavor}.pck "$workdir/opt/apps/com.pvzhe.hybrid-remake/files"
+              echo "./${bin_name}${flavor} \$@" >> "$workdir/opt/apps/com.pvzhe.hybrid-remake/files/run.sh"
+              # 复制嵌入式二进制文件
+              cp ./embedded-binaries/${bin_name}${flavor} "$workdir/opt/apps/com.pvzhe.hybrid-remake/files"
+              chmod +x "$workdir/opt/apps/com.pvzhe.hybrid-remake/files/${bin_name}${flavor}"
               # 构建 deb
               dpkg-deb -b "$workdir"
               out_name="com.pvzhe.hybrid-remake_${APP_VER}_${arch}"
