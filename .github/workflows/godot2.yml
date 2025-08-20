@@ -18,11 +18,6 @@ jobs:
           [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
           $PSDefaultParameterValues['*:Encoding'] = 'utf8'
           
-          # 使用编码后的 URL
-          $url1 = [System.Web.HttpUtility]::UrlEncode("https://blob.bits.ink/pvz/v0.4/植物大战僵尸杂交版v0.4发布版.zip")
-          $url2 = [System.Web.HttpUtility]::UrlEncode("https://blob.bits.ink/pvz/v0.4/植物大战僵尸杂交版v0.4发布兼容版.zip")
-          
-          # 或者直接使用编码后的 URL
           Invoke-WebRequest -Uri "https://blob.bits.ink/pvz/v0.4/%E6%A4%8D%E7%89%A9%E5%A4%A7%E6%88%98%E5%83%B5%E5%B0%B8%E6%9D%82%E4%BA%A4%E7%89%88v0.4%E5%8F%91%E5%B8%83%E7%89%88.zip" -OutFile "pvz-release.zip"
           Invoke-WebRequest -Uri "https://blob.bits.ink/pvz/v0.4/%E6%A4%8D%E7%89%A9%E5%A4%A7%E6%88%98%E5%83%B5%E5%B0%B8%E6%9D%82%E4%BA%A4%E7%89%88v0.4%E5%8F%91%E5%B8%83%E5%85%BC%E5%AE%B9%E7%89%88.zip" -OutFile "pvz-compatible.zip"
           
