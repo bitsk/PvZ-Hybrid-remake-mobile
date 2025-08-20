@@ -21,16 +21,39 @@ jobs:
           Invoke-WebRequest -Uri "https://blob.bits.ink/pvz/v0.4/%E6%A4%8D%E7%89%A9%E5%A4%A7%E6%88%98%E5%83%B5%E5%B0%B8%E6%9D%82%E4%BA%A4%E7%89%88v0.4%E5%8F%91%E5%B8%83%E7%89%88.zip" -OutFile "pvz-release.zip"
           Invoke-WebRequest -Uri "https://blob.bits.ink/pvz/v0.4/%E6%A4%8D%E7%89%A9%E5%A4%A7%E6%88%98%E5%83%B5%E5%B0%B8%E6%9D%82%E4%BA%A4%E7%89%88v0.4%E5%8F%91%E5%B8%83%E5%85%BC%E5%AE%B9%E7%89%88.zip" -OutFile "pvz-compatible.zip"
           
-          Expand-Archive -Path "pvz-release.zip" -DestinationPath "."
-          Move-Item -Path "植物大战僵尸杂交版v0.4发布版.pck" -Destination "pvz.pck"
-          Remove-Item -Path "植物大战僵尸杂交版v0.4发布*" -Force
-          Expand-Archive -Path "pvz-compatible.zip" -DestinationPath "."
-          Move-Item -Path "植物大战僵尸杂交版v0.4发布版.pck" -Destination "pvz_gl.pck"
-          Remove-Item -Path "植物大战僵尸杂交版v0.4发布*" -Force
+          # 解压第一个文件
+          Expand-Archive -Path "pvz-release.zip" -DestinationPath "release" -Force
+          # 查看解压后的文件
+          Write-Host "Release archive contents:"
+          Get-ChildItem -Path "release" | ForEach-Object { Write-Host $_.Name }
+          # 使用通配符移动 PCK 文件
+          $pckFile = Get-ChildItem -Path "release" -Filter "*.pck" | Select-Object -First 1
+          if ($pckFile) {
+              Move-Item -Path $pckFile.FullName -Destination "pvz.pck"
+              Write-Host "Moved $($pckFile.Name) to pvz.pck"
+          }
+          # 清理
+          Remove-Item -Path "release" -Recurse -Force
+          Remove-Item -Path "pvz-release.zip" -Force
+          
+          # 解压第二个文件
+          Expand-Archive -Path "pvz-compatible.zip" -DestinationPath "compatible" -Force
+          # 查看解压后的文件
+          Write-Host "Compatible archive contents:"
+          Get-ChildItem -Path "compatible" | ForEach-Object { Write-Host $_.Name }
+          # 使用通配符移动 PCK 文件
+          $pckFileGl = Get-ChildItem -Path "compatible" -Filter "*.pck" | Select-Object -First 1
+          if ($pckFileGl) {
+              Move-Item -Path $pckFileGl.FullName -Destination "pvz_gl.pck"
+              Write-Host "Moved $($pckFileGl.Name) to pvz_gl.pck"
+          }
+          # 清理
+          Remove-Item -Path "compatible" -Recurse -Force
+          Remove-Item -Path "pvz-compatible.zip" -Force
           
           # 下载 GDRE Tools Windows 版本
           Invoke-WebRequest -Uri "https://github.com/GDRETools/gdsdecomp/releases/download/v1.0.0/GDRE_tools-v1.0.0-windows.zip" -OutFile "GDRE_tools-v1.0.0-windows.zip"
-          Expand-Archive -Path "GDRE_tools-v1.0.0-windows.zip" -DestinationPath "."
+          Expand-Archive -Path "GDRE_tools-v1.0.0-windows.zip" -DestinationPath "." -Force
           New-Item -ItemType Directory -Path "pvz-project", "pvz-project-gl" -Force
           
           # 1) 使用 GDRE Tools 解包（解密）两个 PCK 到独立目录
@@ -39,7 +62,7 @@ jobs:
           
           # 2) 下载 Godot 模板
           Invoke-WebRequest -Uri "https://github.com/godotengine/godot/releases/download/${{ env.GODOT_VERSION }}-stable/Godot_v${{ env.GODOT_VERSION }}-stable_export_templates.tpz" -OutFile "templates.tpz"
-          Expand-Archive -Path "templates.tpz" -DestinationPath "."
+          Expand-Archive -Path "templates.tpz" -DestinationPath "." -Force
           Remove-Item -Path "templates.tpz" -Force
           Remove-Item -Path "templates\android*", "templates\ios.zip", "templates\macos.zip", "templates\web*", "templates\win*", "templates\linux_debug*" -Force -ErrorAction SilentlyContinue
           
@@ -59,11 +82,16 @@ jobs:
           
           foreach ($arch in $archs) {
               $template_name = $arch.template
+              Write-Host "Processing architecture: $($arch.name) with template: $template_name"
               # 生成普通版
               .\gdre_tools.exe --headless --pck-create=.\pvz-project --output=.\embedded-binaries\$template_name --pck-version=2 --pck-engine-version=${{ env.GODOT_VERSION }} --embed=.\templates\$template_name
               # 生成GL版
               .\gdre_tools.exe --headless --pck-create=.\pvz-project-gl --output=.\embedded-binaries\${template_name}_gl --pck-version=2 --pck-engine-version=${{ env.GODOT_VERSION }} --embed=.\templates\$template_name
           }
+          
+          # 检查生成的文件
+          Write-Host "Generated embedded binaries:"
+          Get-ChildItem -Path "embedded-binaries" | ForEach-Object { Write-Host $_.Name }
         shell: powershell
           
       - name: Upload Project Artifact
