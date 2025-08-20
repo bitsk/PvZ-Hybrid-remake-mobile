@@ -60,18 +60,63 @@ jobs:
           .\gdre_tools.exe --headless --recover=.\pvz.pck --output=.\pvz-project --key=${{ secrets.AES_KEY }}
           .\gdre_tools.exe --headless --recover=.\pvz_gl.pck --output=.\pvz-project-gl --key=${{ secrets.AES_KEY }}
           
-          # 2) 下载 Godot 模板
-          Invoke-WebRequest -Uri "https://github.com/godotengine/godot/releases/download/${{ env.GODOT_VERSION }}-stable/Godot_v${{ env.GODOT_VERSION }}-stable_export_templates.tpz" -OutFile "templates.tpz"
-          # 重命名 .tpz 为 .zip 以便 PowerShell 能够解压
-          Rename-Item -Path "templates.tpz" -NewName "templates.zip"
-          Expand-Archive -Path "templates.zip" -DestinationPath "." -Force
-          Remove-Item -Path "templates.zip" -Force
-          Remove-Item -Path "templates\android*", "templates\ios.zip", "templates\macos.zip", "templates\web*", "templates\win*", "templates\linux_debug*" -Force -ErrorAction SilentlyContinue
+          # 2) 下载 Godot 模板，添加重试和验证机制
+          $maxRetries = 3
+          $retryCount = 0
+          $templateDownloaded = $false
+          
+          while ($retryCount -lt $maxRetries -and -not $templateDownloaded) {
+              try {
+                  Write-Host "Downloading Godot templates (attempt $($retryCount + 1)/$maxRetries)..."
+                  Invoke-WebRequest -Uri "https://github.com/godotengine/godot/releases/download/${{ env.GODOT_VERSION }}-stable/Godot_v${{ env.GODOT_VERSION }}-stable_export_templates.tpz" -OutFile "templates.tpz"
+                  
+                  # 检查文件大小
+                  $fileInfo = Get-Item "templates.tpz"
+                  Write-Host "Downloaded file size: $($fileInfo.Length) bytes"
+                  
+                  if ($fileInfo.Length -gt 1000000) {  # 至少 1MB
+                      # 重命名并尝试解压
+                      Rename-Item -Path "templates.tpz" -NewName "templates.zip"
+                      
+                      # 使用 7-Zip 而不是 PowerShell 的 Expand-Archive
+                      Write-Host "Extracting templates using 7-Zip..."
+                      & "C:\Program Files\7-Zip\7z.exe" x "templates.zip" -y
+                      
+                      if ($LASTEXITCODE -eq 0) {
+                          Write-Host "Templates extracted successfully"
+                          $templateDownloaded = $true
+                          Remove-Item -Path "templates.zip" -Force
+                          Remove-Item -Path "templates\android*", "templates\ios.zip", "templates\macos.zip", "templates\web*", "templates\win*", "templates\linux_debug*" -Force -ErrorAction SilentlyContinue
+                      } else {
+                          Write-Host "7-Zip extraction failed, retrying..."
+                          Remove-Item -Path "templates.zip" -Force -ErrorAction SilentlyContinue
+                      }
+                  } else {
+                      Write-Host "Downloaded file too small, retrying..."
+                      Remove-Item -Path "templates.tpz" -Force -ErrorAction SilentlyContinue
+                  }
+              } catch {
+                  Write-Host "Download failed: $($_.Exception.Message)"
+                  Remove-Item -Path "templates.tpz" -Force -ErrorAction SilentlyContinue
+                  Remove-Item -Path "templates.zip" -Force -ErrorAction SilentlyContinue
+              }
+              
+              $retryCount++
+              if (-not $templateDownloaded -and $retryCount -lt $maxRetries) {
+                  Write-Host "Waiting 10 seconds before retry..."
+                  Start-Sleep -Seconds 10
+              }
+          }
+          
+          if (-not $templateDownloaded) {
+              Write-Host "Failed to download Godot templates after $maxRetries attempts"
+              exit 1
+          }
           
           # 下载 RISC-V 模板
           Invoke-WebRequest -Uri "https://gitee.com/openkylin/godot-riscv/releases/download/4.4/godot.linuxbsd.template_release.rv64.llvm.7z" -OutFile "riscv.7z"
           # 使用 7z 解压（Windows runner 自带）
-          & "C:\Program Files\7-Zip\7z.exe" x riscv.7z
+          & "C:\Program Files\7-Zip\7z.exe" x riscv.7z -y
           Move-Item -Path "godot.linuxbsd.template_release.rv64.llvm" -Destination "templates\linux_release.rv64"
           
           # 3) 为不同架构直接生成嵌入 PCK 的可执行文件
