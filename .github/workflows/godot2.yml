@@ -30,8 +30,8 @@ jobs:
           chmod +x gdre_tools.x86_64
           mkdir -p pvz-project pvz-project-gl
           # 1) 使用 GDRE Tools 解包（解密）两个 PCK 到独立目录
-          ./gdre_tools.x86_64 --headless --pck-extract=./pvz.pck --output=./pvz-project --key=${{ secrets.AES_KEY }}
-          ./gdre_tools.x86_64 --headless --pck-extract=./pvz_gl.pck --output=./pvz-project-gl --key=${{ secrets.AES_KEY }}
+          ./gdre_tools.x86_64 --headless --extract=./pvz.pck --output=./pvz-project --key=${{ secrets.AES_KEY }}
+          ./gdre_tools.x86_64 --headless --extract=./pvz_gl.pck --output=./pvz-project-gl --key=${{ secrets.AES_KEY }}
           # 2) 分别重新打包生成两个 PCK（发布版与发布兼容版）
           ./gdre_tools.x86_64 --headless --pck-create=./pvz-project --output=./pvz.pck --pck-version=2 --pck-engine-version=${{ env.GODOT_VERSION }} --key=${{ secrets.AES_KEY }}
           ./gdre_tools.x86_64 --headless --pck-create=./pvz-project-gl --output=./pvz_gl.pck --pck-version=2 --pck-engine-version=${{ env.GODOT_VERSION }} --key=${{ secrets.AES_KEY }}
