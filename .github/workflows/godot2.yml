@@ -24,7 +24,7 @@ jobs:
           chmod +x gdre_tools.x86_64
           mkdir pvz-project
           ./gdre_tools.x86_64 --headless --recover=$PCK_PATH --output=./pvz-project --key=BDEC50605CD551C59B47F8CE8292D3A8AB30DF851556C05657089816430AB3E1
-          ./gdre_tools.x86_64 --headless --pck-create=./pvz-project --output=./pvz.pck
+          ./gdre_tools.x86_64 --headless --pck-create=./pvz-project --output=./pvz.pck --pck-version=2 --pck-engine-version=4.4.1
           rm $PCK_PATH
       - name: Upload Project Artifact
         uses: actions/upload-artifact@v4
