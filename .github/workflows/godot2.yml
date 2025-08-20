@@ -15,9 +15,9 @@ jobs:
     steps:
       - run: mkdir pck-file
       - run: |
-          wget -q https://f.odata.cc/jpshVEFJiK/植物大战僵尸杂交版v0.4发布兼容版.apk
-          mv 植物大战僵尸杂交版v0.4发布兼容版.apk 植物大战僵尸杂交版v0.4发布兼容版.zip
-          unzip 植物大战僵尸杂交版v0.4发布兼容版.zip
+          wget -q https://f.odata.cc/get/jpshVEFJiK/植物大战僵尸杂交版v0.4发布版.apk
+          mv 植物大战僵尸杂交版v0.4发布版.apk 植物大战僵尸杂交版v0.4发布版.zip
+          unzip 植物大战僵尸杂交版v0.4发布版.zip
           mv assets pvz-project
           #PCK_PATH=$(find . -name "*.pck" | head -n1)
           #echo "PCK_PATH=$(find . -name "*.pck" | head -n1)" >> $GITHUB_ENV
