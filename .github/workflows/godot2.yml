@@ -98,10 +98,12 @@ jobs:
 
       - name: Recover PCKs to Godot projects
         run: |
-          .\gdre_tools.exe --headless --recover=.\pvz.pck --output=.\pvz-project --key=${{ secrets.AES_KEY }}
-          if ($LASTEXITCODE -ne 0) { throw 'GDRE recover (normal) failed' }
-          .\gdre_tools.exe --headless --recover=.\pvz_gl.pck --output=.\pvz-project-gl --key=${{ secrets.AES_KEY }}
-          if ($LASTEXITCODE -ne 0) { throw 'GDRE recover (GL) failed' }
+          & .\gdre_tools.exe --headless --recover=.\pvz.pck --output=.\pvz-project --key="${{ secrets.AES_KEY }}"
+          $exit = $LASTEXITCODE
+          if (-not (Test-Path -Path ".\pvz-project\project.godot")) { throw "GDRE recover (normal) did not produce project.godot (exit=$exit)" }
+          & .\gdre_tools.exe --headless --recover=.\pvz_gl.pck --output=.\pvz-project-gl --key="${{ secrets.AES_KEY }}"
+          $exit2 = $LASTEXITCODE
+          if (-not (Test-Path -Path ".\pvz-project-gl\project.godot")) { throw "GDRE recover (GL) did not produce project.godot (exit=$exit2)" }
         shell: powershell
 
       - name: Download Godot export templates
