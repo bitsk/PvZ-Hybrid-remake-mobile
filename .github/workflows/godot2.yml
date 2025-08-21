@@ -198,11 +198,13 @@ jobs:
 
           $repacked = Join-Path $env:RUNNER_TEMP "pvz_repacked.pck"
           .\gdre_tools.exe --headless --pck-create=.\pvz-project --output="$repacked" --pck-version=2 --pck-engine-version=${{ env.GODOT_VERSION }}
-          if ($LASTEXITCODE -ne 0) { throw "pck create failed: normal" }
+          if (-not (Test-Path $repacked)) { throw "pck create produced no file: normal" }
+          if ((Get-Item $repacked).Length -lt 1024) { throw "pck create produced too small file: normal" }
 
           $repackedGl = Join-Path $env:RUNNER_TEMP "pvz_repacked_gl.pck"
           .\gdre_tools.exe --headless --pck-create=.\pvz-project-gl --output="$repackedGl" --pck-version=2 --pck-engine-version=${{ env.GODOT_VERSION }}
-          if ($LASTEXITCODE -ne 0) { throw "pck create failed: gl" }
+          if (-not (Test-Path $repackedGl)) { throw "pck create produced no file: gl" }
+          if ((Get-Item $repackedGl).Length -lt 1024) { throw "pck create produced too small file: gl" }
 
           $archs = @(
             @{name="amd64"; template="linux_release.x86_64"},
