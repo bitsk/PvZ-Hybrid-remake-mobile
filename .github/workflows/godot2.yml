@@ -311,10 +311,8 @@ jobs:
           set -e
           curl -L --retry 5 --retry-delay 5 --fail --continue-at - -o GDRE_tools-v0.9.1-linux.zip https://github.com/GDRETools/gdsdecomp/releases/download/v0.9.1/GDRE_tools-v0.9.1-linux.zip
           unzip -o GDRE_tools-v0.9.1-linux.zip
-          chmod +x gdre_tools || true
-          if [ ! -x gdre_tools ]; then chmod +x GDRE_tools || true; fi
-          GDRE_BIN=./gdre_tools
-          if [ ! -x "$GDRE_BIN" ]; then GDRE_BIN=./GDRE_tools; fi
+          chmod +x ./gdre_tools.x86_64 || true
+          GDRE_BIN=./gdre_tools.x86_64
           "$GDRE_BIN" --headless --pck-create=./pvz-project --output=./pvz.pck --pck-version=2 --pck-engine-version=${GODOT_VERSION}
           test -s ./pvz.pck
           "$GDRE_BIN" --headless --pck-create=./pvz-project-gl --output=./pvz_gl.pck --pck-version=2 --pck-engine-version=${GODOT_VERSION}
