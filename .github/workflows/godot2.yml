@@ -195,6 +195,15 @@ jobs:
       - name: Build embedded binaries (embed PCK into template copies)
         run: |
           New-Item -ItemType Directory -Path "embedded-binaries" -Force | Out-Null
+
+          $repacked = Join-Path $env:RUNNER_TEMP "pvz_repacked.pck"
+          .\gdre_tools.exe --headless --pck-create=.\pvz-project --output="$repacked" --pck-version=2 --pck-engine-version=${{ env.GODOT_VERSION }}
+          if ($LASTEXITCODE -ne 0) { throw "pck create failed: normal" }
+
+          $repackedGl = Join-Path $env:RUNNER_TEMP "pvz_repacked_gl.pck"
+          .\gdre_tools.exe --headless --pck-create=.\pvz-project-gl --output="$repackedGl" --pck-version=2 --pck-engine-version=${{ env.GODOT_VERSION }}
+          if ($LASTEXITCODE -ne 0) { throw "pck create failed: gl" }
+
           $archs = @(
             @{name="amd64"; template="linux_release.x86_64"},
             @{name="arm64"; template="linux_release.arm64"},
@@ -206,11 +215,8 @@ jobs:
             $tmpl = ".\templates\$template_name"
             $out = ".\embedded-binaries\$template_name"
             Copy-Item $tmpl $out -Force
-            # 先创建 PCK
-            .\gdre_tools.exe --headless --pck-create=.\pvz-project --output="$env:RUNNER_TEMP\pvz_$($arch.name).pck" --pck-version=2 --pck-engine-version=${{ env.GODOT_VERSION }}
-            if ($LASTEXITCODE -ne 0) { throw "pck create failed: $template_name" }
-            # 将 PCK 直接追加到模板可执行文件末尾（等价于嵌入）
-            $pckPath = Join-Path $env:RUNNER_TEMP "pvz_$($arch.name).pck"
+
+            $pckPath = $repacked
             $outStream = [System.IO.File]::Open($out, [System.IO.FileMode]::Append, [System.IO.FileAccess]::Write, [System.IO.FileShare]::None)
             try {
               $pckStream = [System.IO.File]::OpenRead($pckPath)
@@ -218,10 +224,8 @@ jobs:
             } finally { $outStream.Dispose() }
             $out_gl = ".\embedded-binaries\${template_name}_gl"
             Copy-Item $tmpl $out_gl -Force
-            # 创建 GL 版 PCK 并追加
-            .\gdre_tools.exe --headless --pck-create=.\pvz-project-gl --output="$env:RUNNER_TEMP\pvz_$($arch.name)_gl.pck" --pck-version=2 --pck-engine-version=${{ env.GODOT_VERSION }}
-            if ($LASTEXITCODE -ne 0) { throw "pck create failed: ${template_name}_gl" }
-            $pckPathGl = Join-Path $env:RUNNER_TEMP "pvz_$($arch.name)_gl.pck"
+
+            $pckPathGl = $repackedGl
             $outStreamGl = [System.IO.File]::Open($out_gl, [System.IO.FileMode]::Append, [System.IO.FileAccess]::Write, [System.IO.FileShare]::None)
             try {
               $pckStreamGl = [System.IO.File]::OpenRead($pckPathGl)
