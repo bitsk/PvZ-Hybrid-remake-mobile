@@ -130,15 +130,21 @@ jobs:
           foreach ($arch in $archs) {
               $template_name = $arch.template
               Write-Host "Processing architecture: $($arch.name) with template: $template_name"
-              # 生成普通版
-              .\gdre_tools.exe --headless --pck-create=.\pvz-project --output=.\embedded-binaries\$template_name --pck-version=2 --pck-engine-version=${{ env.GODOT_VERSION }} --embed=.\templates\$template_name
-              # 生成GL版
-              .\gdre_tools.exe --headless --pck-create=.\pvz-project-gl --output=.\embedded-binaries\${template_name}_gl --pck-version=2 --pck-engine-version=${{ env.GODOT_VERSION }} --embed=.\templates\$template_name
+
+              $tmpl = ".\templates\$template_name"
+
+              $out = ".\embedded-binaries\$template_name"
+              Copy-Item $tmpl $out -Force
+              .\gdre_tools.exe --headless --pck-create=.\pvz-project --output="$env:RUNNER_TEMP\pvz_$($arch.name).pck" --pck-version=2 --pck-engine-version=${{ env.GODOT_VERSION }} --embed="$out"
+              $out_gl = ".\embedded-binaries\${template_name}_gl"
+              Copy-Item $tmpl $out_gl -Force
+              .\gdre_tools.exe --headless --pck-create=.\pvz-project-gl --output="$env:RUNNER_TEMP\pvz_$($arch.name)_gl.pck" --pck-version=2 --pck-engine-version=${{ env.GODOT_VERSION }} --embed="$out_gl"
           }
           
-          # 检查生成的文件
           Write-Host "Generated embedded binaries:"
           Get-ChildItem -Path "embedded-binaries" | ForEach-Object { Write-Host $_.Name }
+          $count = (Get-ChildItem -Path "embedded-binaries" -File | Measure-Object).Count
+          if ($count -eq 0) { throw "embedded-binaries 为空，未生成任何文件" }
         shell: powershell
           
       - name: Upload Project Artifact
