@@ -45,8 +45,10 @@ jobs:
         id: cache-gdre
         uses: actions/cache@v4
         with:
-          path: gdre_tools.exe
-          key: gdre-${{ runner.os }}-v1.0.0
+          path: |
+            gdre_tools.exe
+            gdre_tools.pck
+          key: gdre-${{ runner.os }}-v1.0.0-b
 
       - name: Cache Godot templates
         id: cache-templates
