@@ -267,16 +267,47 @@ jobs:
           ./godot --headless --path ./pvz-project-gl --editor --quit
         shell: bash
 
-      - name: Repack PCKs on Linux with GDRE 0.9.1
+      - name: Write Linux export preset (normal + GL)
         run: |
           set -e
-          curl -L --retry 5 --retry-delay 5 --fail --continue-at - -o GDRE_tools-v0.9.1-linux.zip https://github.com/GDRETools/gdsdecomp/releases/download/v0.9.1/GDRE_tools-v0.9.1-linux.zip
-          unzip -o GDRE_tools-v0.9.1-linux.zip
-          chmod +x ./gdre_tools.x86_64 || true
-          GDRE_BIN=./gdre_tools.x86_64
-          "$GDRE_BIN" --headless --pck-create=./pvz-project --output=./pvz.pck --pck-version=2 --pck-engine-version=${GODOT_VERSION}
+          for proj in pvz-project pvz-project-gl; do
+            printf '%s\n' \
+              'config_version=5' \
+              '' \
+              '[preset.0]' \
+              '' \
+              'name="Linux"' \
+              'platform="Linux"' \
+              'runnable=false' \
+              'advanced_options=false' \
+              'dedicated_server=false' \
+              'custom_features=""' \
+              'export_filter="all_resources"' \
+              'include_filter=""' \
+              'exclude_filter=""' \
+              'patches=PackedStringArray()' \
+              'encryption_include_filters=""' \
+              'encryption_exclude_filters=""' \
+              'seed=0' \
+              'encrypt_pck=false' \
+              'encrypt_directory=false' \
+              'script_export_mode=2' \
+              '' \
+              '[preset.0.options]' \
+              '' \
+              'custom_template/debug=""' \
+              'custom_template/release=""' \
+              'binary_format/architecture="x86_64"' \
+              > "./$proj/export_presets.cfg"
+          done
+        shell: bash
+
+      - name: Export PCKs with Godot (no GDRE)
+        run: |
+          set -e
+          ./godot --headless --path ./pvz-project --export-pack "Linux" ./pvz.pck
           test -s ./pvz.pck
-          "$GDRE_BIN" --headless --pck-create=./pvz-project-gl --output=./pvz_gl.pck --pck-version=2 --pck-engine-version=${GODOT_VERSION}
+          ./godot --headless --path ./pvz-project-gl --export-pack "Linux" ./pvz_gl.pck
           test -s ./pvz_gl.pck
         shell: bash
 
