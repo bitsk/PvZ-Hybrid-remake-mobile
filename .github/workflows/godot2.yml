@@ -192,65 +192,17 @@ jobs:
           path: templates
           key: templates-${{ runner.os }}-${{ env.GODOT_VERSION }}-riscv-v1
 
-      - name: Build embedded binaries (embed PCK into template copies)
-        run: |
-          New-Item -ItemType Directory -Path "embedded-binaries" -Force | Out-Null
-
-          $repacked = Join-Path $env:RUNNER_TEMP "pvz_repacked.pck"
-          .\gdre_tools.exe --headless --pck-create=.\pvz-project --output="$repacked" --pck-version=2 --pck-engine-version=${{ env.GODOT_VERSION }}
-          if (-not (Test-Path $repacked)) { throw "pck create produced no file: normal" }
-          if ((Get-Item $repacked).Length -lt 1024) { throw "pck create produced too small file: normal" }
-
-          $repackedGl = Join-Path $env:RUNNER_TEMP "pvz_repacked_gl.pck"
-          .\gdre_tools.exe --headless --pck-create=.\pvz-project-gl --output="$repackedGl" --pck-version=2 --pck-engine-version=${{ env.GODOT_VERSION }}
-          if (-not (Test-Path $repackedGl)) { throw "pck create produced no file: gl" }
-          if ((Get-Item $repackedGl).Length -lt 1024) { throw "pck create produced too small file: gl" }
-
-          $archs = @(
-            @{name="amd64"; template="linux_release.x86_64"},
-            @{name="arm64"; template="linux_release.arm64"},
-            @{name="riscv64"; template="linux_release.rv64"}
-          )
-          foreach ($arch in $archs) {
-            $template_name = $arch.template
-            Write-Host "Processing architecture: $($arch.name) with template: $template_name"
-            $tmpl = ".\templates\$template_name"
-            $out = ".\embedded-binaries\$template_name"
-            Copy-Item $tmpl $out -Force
-
-            $pckPath = $repacked
-            $outStream = [System.IO.File]::Open($out, [System.IO.FileMode]::Append, [System.IO.FileAccess]::Write, [System.IO.FileShare]::None)
-            try {
-              $pckStream = [System.IO.File]::OpenRead($pckPath)
-              try { $pckStream.CopyTo($outStream) } finally { $pckStream.Dispose() }
-            } finally { $outStream.Dispose() }
-            $out_gl = ".\embedded-binaries\${template_name}_gl"
-            Copy-Item $tmpl $out_gl -Force
-
-            $pckPathGl = $repackedGl
-            $outStreamGl = [System.IO.File]::Open($out_gl, [System.IO.FileMode]::Append, [System.IO.FileAccess]::Write, [System.IO.FileShare]::None)
-            try {
-              $pckStreamGl = [System.IO.File]::OpenRead($pckPathGl)
-              try { $pckStreamGl.CopyTo($outStreamGl) } finally { $pckStreamGl.Dispose() }
-            } finally { $outStreamGl.Dispose() }
-          }
-          Write-Host "Generated embedded binaries:"
-          Get-ChildItem -Path "embedded-binaries" | ForEach-Object { Write-Host $_.Name }
-          $count = (Get-ChildItem -Path "embedded-binaries" -File | Measure-Object).Count
-          if ($count -eq 0) { throw 'embedded-binaries is empty; no files generated' }
-        shell: powershell
-          
       - name: Upload Project Artifact
         uses: actions/upload-artifact@v4
         with:
           name: pvz-project
           path: pvz-project/
-          
-      - name: Upload Embedded Binaries
+      
+      - name: Upload GL Project Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: embedded-binaries
-          path: embedded-binaries/
+          name: pvz-project-gl
+          path: pvz-project-gl/
     
   export_game_android:
      runs-on: ubuntu-latest
@@ -335,22 +287,59 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-                
-      - name: Download Embedded Binaries
+
+      - name: Download Godot project artifact (normal)
         uses: actions/download-artifact@v4
         with:
-          name: embedded-binaries
-          path: ./embedded-binaries
+          name: pvz-project
+          path: ./pvz-project
+
+      - name: Download Godot project artifact (GL)
+        uses: actions/download-artifact@v4
+        with:
+          name: pvz-project-gl
+          path: ./pvz-project-gl
+
+      - name: Install build dependencies
+        run: |
+          sed -i s@deb.debian@archive.debian@g /etc/apt/sources.list
+          apt update && apt install -y curl unzip p7zip-full make dpkg
+        shell: bash
+
+      - name: Repack PCKs on Linux with GDRE 0.9.1
+        run: |
+          set -e
+          curl -L --retry 5 --retry-delay 5 --fail --continue-at - -o GDRE_tools-v0.9.1-linux.zip https://github.com/GDRETools/gdsdecomp/releases/download/v0.9.1/GDRE_tools-v0.9.1-linux.zip
+          unzip -o GDRE_tools-v0.9.1-linux.zip
+          chmod +x gdre_tools || true
+          if [ ! -x gdre_tools ]; then chmod +x GDRE_tools || true; fi
+          GDRE_BIN=./gdre_tools
+          if [ ! -x "$GDRE_BIN" ]; then GDRE_BIN=./GDRE_tools; fi
+          "$GDRE_BIN" --headless --pck-create=./pvz-project --output=./pvz.pck --pck-version=2 --pck-engine-version=${GODOT_VERSION}
+          test -s ./pvz.pck
+          "$GDRE_BIN" --headless --pck-create=./pvz-project-gl --output=./pvz_gl.pck --pck-version=2 --pck-engine-version=${GODOT_VERSION}
+          test -s ./pvz_gl.pck
+        shell: bash
+
+      - name: Download Linux export templates
+        run: |
+          set -e
+          curl -L --retry 5 --retry-delay 5 --fail --continue-at - -o templates.tpz https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_export_templates.tpz
+          unzip -o templates.tpz
+          rm -f templates.tpz
+          rm -f templates/android* templates/ios.zip templates/macos.zip templates/web* templates/win* templates/linux_debug*
+          curl -L --retry 5 --retry-delay 5 --fail --continue-at - -o riscv.7z https://gitee.com/openkylin/godot-riscv/releases/download/4.4/godot.linuxbsd.template_release.rv64.llvm.7z
+          7z x -y riscv.7z
+          mv godot.linuxbsd.template_release.rv64.llvm templates/linux_release.rv64
+          rm -f riscv.7z
+        shell: bash
 
       - name: Create deb packages
         run: |
-          sed -i s@deb.debian@archive.debian@g /etc/apt/sources.list
-          apt update && apt install make dpkg -y
           set -e
           ls . && ls ./assets
-          chmod +x ./embedded-binaries/*
           mkdir -p releases
-          # 为 amd64/arm64/riscv64 三个架构分别打包（发布版与兼容版）
+          # 为 amd64/arm64/riscv64 三个架构分别打包（发布版与兼容版），二进制与 PCK 分离
           for arch in amd64 arm64 riscv64; do
             if [ "$arch" = "amd64" ]; then bin_name=linux_release.x86_64; fi
             if [ "$arch" = "arm64" ]; then bin_name=linux_release.arm64; fi
@@ -372,13 +361,15 @@ jobs:
               # 复制资源与桌面文件
               cp assets/deb/com.pvzhe.hybrid-remake.png "$workdir/opt/apps/com.pvzhe.hybrid-remake/entries/icons/hicolor/128x128/apps"
               cp assets/deb/com.pvzhe.hybrid-remake.desktop "$workdir/opt/apps/com.pvzhe.hybrid-remake/entries/applications"
-              # 复制运行脚本（不需要 --main-pack 参数，因为 PCK 已嵌入）
+              # 复制运行脚本（使用 --main-pack 指定 PCK）
               cp assets/deb/run.sh "$workdir/opt/apps/com.pvzhe.hybrid-remake/files/run.sh"
               chmod +x "$workdir/opt/apps/com.pvzhe.hybrid-remake/files/run.sh"
-              echo "./${bin_name}${flavor} \$@" >> "$workdir/opt/apps/com.pvzhe.hybrid-remake/files/run.sh"
-              # 复制嵌入式二进制文件
-              cp ./embedded-binaries/${bin_name}${flavor} "$workdir/opt/apps/com.pvzhe.hybrid-remake/files"
-              chmod +x "$workdir/opt/apps/com.pvzhe.hybrid-remake/files/${bin_name}${flavor}"
+              if [ "$flavor" = "_gl" ]; then pack_file=pvz_gl.pck; else pack_file=pvz.pck; fi
+              echo "./${bin_name} --main-pack ${pack_file} \$@" >> "$workdir/opt/apps/com.pvzhe.hybrid-remake/files/run.sh"
+              # 复制模板二进制与 PCK（分离放置）
+              cp ./templates/${bin_name} "$workdir/opt/apps/com.pvzhe.hybrid-remake/files/${bin_name}"
+              chmod +x "$workdir/opt/apps/com.pvzhe.hybrid-remake/files/${bin_name}"
+              cp ./${pack_file} "$workdir/opt/apps/com.pvzhe.hybrid-remake/files/${pack_file}"
               # 构建 deb
               dpkg-deb -b "$workdir"
               out_name="com.pvzhe.hybrid-remake_${APP_VER}_${arch}"
