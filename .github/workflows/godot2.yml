@@ -116,11 +116,16 @@ jobs:
 
       - name: Recover PCKs to Godot projects
         run: |
-          & .\gdre_tools.exe --headless --recover=.\pvz.pck --output=.\pvz-project --key="${{ secrets.AES_KEY }}"
+          $args1 = @('--headless', '--recover=./pvz.pck', '--output=./pvz-project', "--key=${{ secrets.AES_KEY }}")
+          $p1 = Start-Process -FilePath .\gdre_tools.exe -ArgumentList $args1 -NoNewWindow -PassThru -Wait
+          Write-Host "gdre recover normal exit code: $($p1.ExitCode)"
           $files1 = (Get-ChildItem -Path ".\pvz-project" -Recurse -File -ErrorAction SilentlyContinue | Measure-Object).Count
           Write-Host "pvz-project file count: $files1"
           if ($files1 -lt 100) { throw "GDRE recover (normal) produced too few files: $files1" }
-          & .\gdre_tools.exe --headless --recover=.\pvz_gl.pck --output=.\pvz-project-gl --key="${{ secrets.AES_KEY }}"
+
+          $args2 = @('--headless', '--recover=./pvz_gl.pck', '--output=./pvz-project-gl', "--key=${{ secrets.AES_KEY }}")
+          $p2 = Start-Process -FilePath .\gdre_tools.exe -ArgumentList $args2 -NoNewWindow -PassThru -Wait
+          Write-Host "gdre recover GL exit code: $($p2.ExitCode)"
           $files2 = (Get-ChildItem -Path ".\pvz-project-gl" -Recurse -File -ErrorAction SilentlyContinue | Measure-Object).Count
           Write-Host "pvz-project-gl file count: $files2"
           if ($files2 -lt 100) { throw "GDRE recover (GL) produced too few files: $files2" }
