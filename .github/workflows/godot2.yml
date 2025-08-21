@@ -185,6 +185,13 @@ jobs:
           Move-Item -Path "godot.linuxbsd.template_release.rv64.llvm" -Destination "templates\linux_release.rv64"
         shell: powershell
 
+      - name: Save Godot templates to cache
+        if: steps.cache-templates.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: templates
+          key: templates-${{ runner.os }}-${{ env.GODOT_VERSION }}-riscv-v1
+
       - name: Build embedded binaries (embed PCK into template copies)
         run: |
           New-Item -ItemType Directory -Path "embedded-binaries" -Force | Out-Null
@@ -199,12 +206,27 @@ jobs:
             $tmpl = ".\templates\$template_name"
             $out = ".\embedded-binaries\$template_name"
             Copy-Item $tmpl $out -Force
-            .\gdre_tools.exe --headless --pck-create=.\pvz-project --output="$env:RUNNER_TEMP\pvz_$($arch.name).pck" --pck-version=2 --pck-engine-version=${{ env.GODOT_VERSION }} --embed="$out"
-            if ($LASTEXITCODE -ne 0) { throw "embed failed: $template_name" }
+            # 先创建 PCK
+            .\gdre_tools.exe --headless --pck-create=.\pvz-project --output="$env:RUNNER_TEMP\pvz_$($arch.name).pck" --pck-version=2 --pck-engine-version=${{ env.GODOT_VERSION }}
+            if ($LASTEXITCODE -ne 0) { throw "pck create failed: $template_name" }
+            # 将 PCK 直接追加到模板可执行文件末尾（等价于嵌入）
+            $pckPath = Join-Path $env:RUNNER_TEMP "pvz_$($arch.name).pck"
+            $outStream = [System.IO.File]::Open($out, [System.IO.FileMode]::Append, [System.IO.FileAccess]::Write, [System.IO.FileShare]::None)
+            try {
+              $pckStream = [System.IO.File]::OpenRead($pckPath)
+              try { $pckStream.CopyTo($outStream) } finally { $pckStream.Dispose() }
+            } finally { $outStream.Dispose() }
             $out_gl = ".\embedded-binaries\${template_name}_gl"
             Copy-Item $tmpl $out_gl -Force
-            .\gdre_tools.exe --headless --pck-create=.\pvz-project-gl --output="$env:RUNNER_TEMP\pvz_$($arch.name)_gl.pck" --pck-version=2 --pck-engine-version=${{ env.GODOT_VERSION }} --embed="$out_gl"
-            if ($LASTEXITCODE -ne 0) { throw "embed failed: ${template_name}_gl" }
+            # 创建 GL 版 PCK 并追加
+            .\gdre_tools.exe --headless --pck-create=.\pvz-project-gl --output="$env:RUNNER_TEMP\pvz_$($arch.name)_gl.pck" --pck-version=2 --pck-engine-version=${{ env.GODOT_VERSION }}
+            if ($LASTEXITCODE -ne 0) { throw "pck create failed: ${template_name}_gl" }
+            $pckPathGl = Join-Path $env:RUNNER_TEMP "pvz_$($arch.name)_gl.pck"
+            $outStreamGl = [System.IO.File]::Open($out_gl, [System.IO.FileMode]::Append, [System.IO.FileAccess]::Write, [System.IO.FileShare]::None)
+            try {
+              $pckStreamGl = [System.IO.File]::OpenRead($pckPathGl)
+              try { $pckStreamGl.CopyTo($outStreamGl) } finally { $pckStreamGl.Dispose() }
+            } finally { $outStreamGl.Dispose() }
           }
           Write-Host "Generated embedded binaries:"
           Get-ChildItem -Path "embedded-binaries" | ForEach-Object { Write-Host $_.Name }
