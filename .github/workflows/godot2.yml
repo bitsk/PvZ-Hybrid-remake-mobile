@@ -50,12 +50,7 @@ jobs:
             gdre_tools.pck
           key: gdre-${{ runner.os }}-v1.0.0-b
 
-      - name: Cache Godot templates
-        id: cache-templates
-        uses: actions/cache@v4
-        with:
-          path: templates
-          key: templates-${{ runner.os }}-${{ env.GODOT_VERSION }}-riscv-v1
+      
 
       - name: Download release archives
         if: steps.cache-pvz-pck.outputs.cache-hit != 'true' && steps.cache-release-zips.outputs.cache-hit != 'true'
@@ -136,63 +131,7 @@ jobs:
           if ($files2 -lt 100) { throw "GDRE recover (GL) produced too few files: $files2" }
         shell: powershell
 
-      - name: Download Godot export templates
-        if: steps.cache-templates.outputs.cache-hit != 'true'
-        run: |
-          $maxRetries = 3
-          $retryCount = 0
-          $templateDownloaded = $false
-          while ($retryCount -lt $maxRetries -and -not $templateDownloaded) {
-            try {
-              Write-Host "Downloading Godot templates (attempt $($retryCount + 1)/$maxRetries)..."
-              curl.exe -L --retry 5 --retry-delay 5 --fail --continue-at - -o "templates.tpz" "https://github.com/godotengine/godot/releases/download/${{ env.GODOT_VERSION }}-stable/Godot_v${{ env.GODOT_VERSION }}-stable_export_templates.tpz"
-              $fileInfo = Get-Item "templates.tpz"
-              Write-Host "Downloaded file size: $($fileInfo.Length) bytes"
-              if ($fileInfo.Length -gt 1000000) {
-                Rename-Item -Path "templates.tpz" -NewName "templates.zip"
-                Write-Host "Extracting templates using 7-Zip..."
-                & "C:\Program Files\7-Zip\7z.exe" x "templates.zip" -y
-                if ($LASTEXITCODE -eq 0) {
-                  Write-Host "Templates extracted successfully"
-                  $templateDownloaded = $true
-                  Remove-Item -Path "templates.zip" -Force
-                  Remove-Item -Path "templates\android*", "templates\ios.zip", "templates\macos.zip", "templates\web*", "templates\win*", "templates\linux_debug*" -Force -ErrorAction SilentlyContinue
-                } else {
-                  Write-Host "7-Zip extraction failed, retrying..."
-                  Remove-Item -Path "templates.zip" -Force -ErrorAction SilentlyContinue
-                }
-              } else {
-                Write-Host "Downloaded file too small, retrying..."
-                Remove-Item -Path "templates.tpz" -Force -ErrorAction SilentlyContinue
-              }
-            } catch {
-              Write-Host "Download failed: $($_.Exception.Message)"
-              Remove-Item -Path "templates.tpz" -Force -ErrorAction SilentlyContinue
-              Remove-Item -Path "templates.zip" -Force -ErrorAction SilentlyContinue
-            }
-            $retryCount++
-            if (-not $templateDownloaded -and $retryCount -lt $maxRetries) {
-              Write-Host "Waiting 10 seconds before retry..."
-              Start-Sleep -Seconds 10
-            }
-          }
-          if (-not $templateDownloaded) { throw 'failed to download Godot templates after retries' }
-        shell: powershell
-
-      - name: Download RISC-V export template
-        if: steps.cache-templates.outputs.cache-hit != 'true'
-        run: |
-          curl.exe -L --retry 5 --retry-delay 5 --fail --continue-at - -o "riscv.7z" "https://gitee.com/openkylin/godot-riscv/releases/download/4.4/godot.linuxbsd.template_release.rv64.llvm.7z"
-          & "C:\Program Files\7-Zip\7z.exe" x riscv.7z -y
-          Move-Item -Path "godot.linuxbsd.template_release.rv64.llvm" -Destination "templates\linux_release.rv64"
-        shell: powershell
-
-      - name: Save Godot templates to cache
-        if: steps.cache-templates.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
-        with:
-          path: templates
-          key: templates-${{ runner.os }}-${{ env.GODOT_VERSION }}-riscv-v1
+      
 
       - name: Upload Project Artifact
         uses: actions/upload-artifact@v4
@@ -304,7 +243,28 @@ jobs:
 
       - name: Install build dependencies
         run: |
-          apt-get update && apt-get install -y curl unzip p7zip-full make dpkg
+          apt-get update && apt-get install -y \
+            curl unzip p7zip-full make dpkg \
+            ca-certificates \
+            libx11-6 libxcursor1 libxinerama1 libxi6 libxrandr2 libgl1 libpulse0
+        shell: bash
+
+      - name: Download Godot editor (Linux)
+        run: |
+          set -e
+          curl -L --retry 5 --retry-delay 5 --fail --continue-at - -o godot.zip https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip
+          unzip -o godot.zip
+          rm -f godot.zip
+          # 将解压出的可执行重命名为 godot，方便调用
+          mv Godot_v${GODOT_VERSION}-stable_linux.x86_64 godot
+          chmod +x ./godot
+        shell: bash
+
+      - name: Pre-import projects and generate UID cache
+        run: |
+          set -e
+          ./godot --headless --path ./pvz-project --editor --quit
+          ./godot --headless --path ./pvz-project-gl --editor --quit
         shell: bash
 
       - name: Repack PCKs on Linux with GDRE 0.9.1
