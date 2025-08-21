@@ -18,6 +18,9 @@ jobs:
           [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
           $PSDefaultParameterValues['*:Encoding'] = 'utf8'
           $ErrorActionPreference = 'Stop'
+          $ProgressPreference = 'SilentlyContinue'
+          [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+          [System.Net.ServicePointManager]::DefaultConnectionLimit = 64
         shell: powershell
 
       - name: Cache PCKs (release and GL)
@@ -55,8 +58,8 @@ jobs:
       - name: Download release archives
         if: steps.cache-pvz-pck.outputs.cache-hit != 'true' && steps.cache-release-zips.outputs.cache-hit != 'true'
         run: |
-          Invoke-WebRequest -Uri "https://blob.bits.ink/pvz/v0.4/%E6%A4%8D%E7%89%A9%E5%A4%A7%E6%88%98%E5%83%B5%E5%B0%B8%E6%9D%82%E4%BA%A4%E7%89%88v0.4%E5%8F%91%E5%B8%83%E7%89%88.zip" -OutFile "pvz-release.zip"
-          Invoke-WebRequest -Uri "https://blob.bits.ink/pvz/v0.4/%E6%A4%8D%E7%89%A9%E5%A4%A7%E6%88%98%E5%83%B5%E5%B0%B8%E6%9D%82%E4%BA%A4%E7%89%88v0.4%E5%8F%91%E5%B8%83%E5%85%BC%E5%AE%B9%E7%89%88.zip" -OutFile "pvz-compatible.zip"
+          curl.exe -L --retry 5 --retry-delay 5 --fail --continue-at - -o "pvz-release.zip" "https://blob.bits.ink/pvz/v0.4/%E6%A4%8D%E7%89%A9%E5%A4%A7%E6%88%98%E5%83%B5%E5%B0%B8%E6%9D%82%E4%BA%A4%E7%89%88v0.4%E5%8F%91%E5%B8%83%E7%89%88.zip"
+          curl.exe -L --retry 5 --retry-delay 5 --fail --continue-at - -o "pvz-compatible.zip" "https://blob.bits.ink/pvz/v0.4/%E6%A4%8D%E7%89%A9%E5%A4%A7%E6%88%98%E5%83%B5%E5%B0%B8%E6%9D%82%E4%BA%A4%E7%89%88v0.4%E5%8F%91%E5%B8%83%E5%85%BC%E5%AE%B9%E7%89%88.zip"
         shell: powershell
 
       - name: Save release zips to cache
@@ -105,7 +108,7 @@ jobs:
       - name: Download and extract GDRE Tools
         if: steps.cache-gdre.outputs.cache-hit != 'true'
         run: |
-          Invoke-WebRequest -Uri "https://github.com/GDRETools/gdsdecomp/releases/download/v1.0.0/GDRE_tools-v1.0.0-windows.zip" -OutFile "GDRE_tools-v1.0.0-windows.zip"
+          curl.exe -L --retry 5 --retry-delay 5 --fail --continue-at - -o "GDRE_tools-v1.0.0-windows.zip" "https://github.com/GDRETools/gdsdecomp/releases/download/v1.0.0/GDRE_tools-v1.0.0-windows.zip"
           Expand-Archive -Path "GDRE_tools-v1.0.0-windows.zip" -DestinationPath "." -Force
         shell: powershell
 
@@ -140,7 +143,7 @@ jobs:
           while ($retryCount -lt $maxRetries -and -not $templateDownloaded) {
             try {
               Write-Host "Downloading Godot templates (attempt $($retryCount + 1)/$maxRetries)..."
-              Invoke-WebRequest -Uri "https://github.com/godotengine/godot/releases/download/${{ env.GODOT_VERSION }}-stable/Godot_v${{ env.GODOT_VERSION }}-stable_export_templates.tpz" -OutFile "templates.tpz"
+              curl.exe -L --retry 5 --retry-delay 5 --fail --continue-at - -o "templates.tpz" "https://github.com/godotengine/godot/releases/download/${{ env.GODOT_VERSION }}-stable/Godot_v${{ env.GODOT_VERSION }}-stable_export_templates.tpz"
               $fileInfo = Get-Item "templates.tpz"
               Write-Host "Downloaded file size: $($fileInfo.Length) bytes"
               if ($fileInfo.Length -gt 1000000) {
@@ -177,7 +180,7 @@ jobs:
       - name: Download RISC-V export template
         if: steps.cache-templates.outputs.cache-hit != 'true'
         run: |
-          Invoke-WebRequest -Uri "https://gitee.com/openkylin/godot-riscv/releases/download/4.4/godot.linuxbsd.template_release.rv64.llvm.7z" -OutFile "riscv.7z"
+          curl.exe -L --retry 5 --retry-delay 5 --fail --continue-at - -o "riscv.7z" "https://gitee.com/openkylin/godot-riscv/releases/download/4.4/godot.linuxbsd.template_release.rv64.llvm.7z"
           & "C:\Program Files\7-Zip\7z.exe" x riscv.7z -y
           Move-Item -Path "godot.linuxbsd.template_release.rv64.llvm" -Destination "templates\linux_release.rv64"
         shell: powershell
