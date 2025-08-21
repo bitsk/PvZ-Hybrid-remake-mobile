@@ -378,11 +378,11 @@ jobs:
             done
           done
           
-      - name: Download android release
-        uses: actions/download-artifact@v4
-        with:
-          name: android
-          path: ./releases 
+      # - name: Download android release
+      #   uses: actions/download-artifact@v4
+      #   with:
+      #     name: android
+      #     path: ./releases 
           
       - name: Download other release
         uses: actions/download-artifact@v4
