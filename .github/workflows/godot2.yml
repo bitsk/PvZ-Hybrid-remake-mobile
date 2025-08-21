@@ -29,6 +29,15 @@ jobs:
             pvz_gl.pck
           key: pvz-pck-${{ runner.os }}-${{ env.APP_VER }}
 
+      - name: Cache release zips
+        id: cache-release-zips
+        uses: actions/cache@v4
+        with:
+          path: |
+            pvz-release.zip
+            pvz-compatible.zip
+          key: pvz-zips-${{ runner.os }}-${{ env.APP_VER }}
+
       - name: Cache GDRE Tools
         id: cache-gdre
         uses: actions/cache@v4
@@ -44,7 +53,7 @@ jobs:
           key: templates-${{ runner.os }}-${{ env.GODOT_VERSION }}-riscv-v1
 
       - name: Download release archives
-        if: steps.cache-pvz-pck.outputs.cache-hit != 'true'
+        if: steps.cache-pvz-pck.outputs.cache-hit != 'true' && steps.cache-release-zips.outputs.cache-hit != 'true'
         run: |
           Invoke-WebRequest -Uri "https://blob.bits.ink/pvz/v0.4/%E6%A4%8D%E7%89%A9%E5%A4%A7%E6%88%98%E5%83%B5%E5%B0%B8%E6%9D%82%E4%BA%A4%E7%89%88v0.4%E5%8F%91%E5%B8%83%E7%89%88.zip" -OutFile "pvz-release.zip"
           Invoke-WebRequest -Uri "https://blob.bits.ink/pvz/v0.4/%E6%A4%8D%E7%89%A9%E5%A4%A7%E6%88%98%E5%83%B5%E5%B0%B8%E6%9D%82%E4%BA%A4%E7%89%88v0.4%E5%8F%91%E5%B8%83%E5%85%BC%E5%AE%B9%E7%89%88.zip" -OutFile "pvz-compatible.zip"
