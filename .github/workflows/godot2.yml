@@ -59,6 +59,15 @@ jobs:
           Invoke-WebRequest -Uri "https://blob.bits.ink/pvz/v0.4/%E6%A4%8D%E7%89%A9%E5%A4%A7%E6%88%98%E5%83%B5%E5%B0%B8%E6%9D%82%E4%BA%A4%E7%89%88v0.4%E5%8F%91%E5%B8%83%E5%85%BC%E5%AE%B9%E7%89%88.zip" -OutFile "pvz-compatible.zip"
         shell: powershell
 
+      - name: Save release zips to cache
+        if: steps.cache-release-zips.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            pvz-release.zip
+            pvz-compatible.zip
+          key: pvz-zips-${{ runner.os }}-${{ env.APP_VER }}
+
       - name: Extract release and move PCK
         if: steps.cache-pvz-pck.outputs.cache-hit != 'true'
         run: |
