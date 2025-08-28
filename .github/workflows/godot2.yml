@@ -5,7 +5,7 @@ on:
 env:
   GODOT_VERSION: 4.4.1
   APP_NAME: "植物大战僵尸杂交版"
-  APP_VER: "0.4"
+  APP_VER: "0.5.1"
 permissions:
   contents: write
 jobs:
@@ -27,8 +27,8 @@ jobs:
       - name: Download repacked PCKs (normal + GL)
         run: |
           set -e
-          curl -L --retry 5 --retry-delay 5 --fail --continue-at - -o pvz.pck https://blob.bits.ink/pvz/v0.4/pvz.pck
-          curl -L --retry 5 --retry-delay 5 --fail --continue-at - -o pvz_gl.pck https://blob.bits.ink/pvz/v0.4/pvz-gl.pck
+          curl -L --retry 5 --retry-delay 5 --fail --continue-at - -o pvz.pck https://blob.bits.ink/pvz/v0.5.1/pvz.pck
+          curl -L --retry 5 --retry-delay 5 --fail --continue-at - -o pvz_gl.pck https://blob.bits.ink/pvz/v0.5.1/pvz-gl.pck
           test -s ./pvz.pck
           test -s ./pvz_gl.pck
         shell: bash
