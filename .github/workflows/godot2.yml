@@ -5,7 +5,7 @@ on:
 env:
   GODOT_VERSION: 4.4.1
   APP_NAME: "植物大战僵尸杂交版"
-  APP_VER: "0.5.1"
+  APP_VER: "0.6.1"
 permissions:
   contents: write
 jobs:
@@ -21,17 +21,90 @@ jobs:
         run: |
           apt-get update && apt-get install -y \
             curl unzip p7zip-full make dpkg \
-            ca-certificates
+            ca-certificates \
+            libx11-6 libxcursor1 libxinerama1 libxi6 libxrandr2 libgl1 libpulse0
         shell: bash
 
-      - name: Download repacked PCKs (normal + GL)
+      - name: Download v0.6.1 release archives (normal + GL)
         run: |
           set -e
-          curl -L --retry 5 --retry-delay 5 --fail --continue-at - -o pvz.pck https://blob.bits.ink/pvz/v0.5.1/pvz.pck
-          curl -L --retry 5 --retry-delay 5 --fail --continue-at - -o pvz_gl.pck https://blob.bits.ink/pvz/v0.5.1/pvz-gl.pck
+          curl -L --retry 5 --retry-delay 5 --fail --continue-at - -o pvz-release.zip "https://r2.182666.xyz/植物大战僵尸杂交版v0.6.1发布版.zip"
+          curl -L --retry 5 --retry-delay 5 --fail --continue-at - -o pvz-compatible.zip "https://r2.182666.xyz/植物大战僵尸杂交版v0.6.1发布兼容版.zip"
+        shell: bash
+
+      - name: Extract release and move PCKs
+        run: |
+          set -e
+          mkdir -p release compatible
+          unzip -o pvz-release.zip -d release
+          unzip -o pvz-compatible.zip -d compatible
+          # 选取各自压缩包中找到的第一个 .pck
+          PCK_NORMAL=$(find release -type f -name '*.pck' | head -n1)
+          if [ -z "$PCK_NORMAL" ]; then echo "no pck found in release" >&2; exit 1; fi
+          mv "$PCK_NORMAL" pvz.pck
+          PCK_GL=$(find compatible -type f -name '*.pck' | head -n1)
+          if [ -z "$PCK_GL" ]; then echo "no pck found in compatible" >&2; exit 1; fi
+          mv "$PCK_GL" pvz_gl.pck
+          rm -rf release compatible pvz-release.zip pvz-compatible.zip
+          test -s ./pvz.pck && test -s ./pvz_gl.pck
+        shell: bash
+
+      - name: Download GDRE Tools v2.0.0-beta.2 (Linux)
+        run: |
+          set -e
+          curl -L --retry 5 --retry-delay 5 --fail --continue-at - -o GDRE_tools-linux.zip https://github.com/GDRETools/gdsdecomp/releases/download/v2.0.0-beta.2/GDRE_tools-v2.0.0-beta.2-linux.zip
+          unzip -o GDRE_tools-linux.zip
+          rm -f GDRE_tools-linux.zip
+          chmod +x ./gdre_tools.x86_64 || true
+        shell: bash
+
+      - name: Recover PCKs to Godot projects (GDRE 2.0)
+        run: |
+          set -e
+          mkdir -p pvz-project pvz-project-gl
+          GDRE_BIN=./gdre_tools.x86_64
+          "$GDRE_BIN" --headless --recover=./pvz.pck --output=./pvz-project --key='${{ secrets.AES_KEY }}'
+          files1=$(find ./pvz-project -type f | wc -l)
+          if [ "$files1" -lt 100 ]; then echo "GDRE recover (normal) produced too few files: $files1" >&2; exit 1; fi
+          "$GDRE_BIN" --headless --recover=./pvz_gl.pck --output=./pvz-project-gl --key='${{ secrets.AES_KEY }}'
+          files2=$(find ./pvz-project-gl -type f | wc -l)
+          if [ "$files2" -lt 100 ]; then echo "GDRE recover (GL) produced too few files: $files2" >&2; exit 1; fi
+        shell: bash
+
+      - name: Download Godot editor (Linux)
+        run: |
+          set -e
+          curl -L --retry 5 --retry-delay 5 --fail --continue-at - -o godot.zip https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip
+          unzip -o godot.zip
+          rm -f godot.zip
+          mv Godot_v${GODOT_VERSION}-stable_linux.x86_64 godot
+          chmod +x ./godot
+        shell: bash
+
+      - name: Pre-import projects and generate UID cache
+        run: |
+          set -e
+          ./godot --headless --path ./pvz-project --editor --quit
+          ./godot --headless --path ./pvz-project-gl --editor --quit
+        shell: bash
+
+      - name: Repack PCKs from recovered projects (GDRE 2.0)
+        run: |
+          set -e
+          GDRE_BIN=./gdre_tools.x86_64
+          "$GDRE_BIN" --headless --pck-create=./pvz-project --output=./pvz.pck --pck-version=2 --pck-engine-version=${GODOT_VERSION}
           test -s ./pvz.pck
+          "$GDRE_BIN" --headless --pck-create=./pvz-project-gl --output=./pvz_gl.pck --pck-version=2 --pck-engine-version=${GODOT_VERSION}
           test -s ./pvz_gl.pck
         shell: bash
+
+      - name: Upload recovered Godot projects
+        uses: actions/upload-artifact@v4
+        with:
+          name: pvz-projects-0.6.1
+          path: |
+            pvz-project/
+            pvz-project-gl/
 
       - name: Download Linux export templates
         run: |
