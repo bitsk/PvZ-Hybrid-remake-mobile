@@ -28,8 +28,39 @@ jobs:
       - name: Download v0.6.1 release archives (normal + GL)
         run: |
           set -e
-          wget --tries=5 --waitretry=5 --retry-connrefused --referer="https://pvzgame.app/" -O pvz-release.zip "https://r2.182666.xyz/植物大战僵尸杂交版v0.6.1发布版.zip"
-          wget --tries=5 --waitretry=5 --retry-connrefused --referer="https://pvzgame.app/" -O pvz-compatible.zip "https://r2.182666.xyz/植物大战僵尸杂交版v0.6.1发布兼容版.zip"
+          REF='https://pvzgame.app/'
+          UA='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122 Safari/537.36'
+          URL_RELEASE='https://r2.182666.xyz/植物大战僵尸杂交版v0.6.1发布版.zip'
+          URL_COMP='https://r2.182666.xyz/植物大战僵尸杂交版v0.6.1发布兼容版.zip'
+          proxies=(
+            'http://106.14.91.83:9080'
+            'http://47.119.22.156:8080'
+            'http://47.119.164.33:8080'
+            'http://47.92.82.167:80'
+          )
+          download_wget() {
+            out="$1"; url="$2"; shift 2
+            wget --tries=5 --waitretry=5 --retry-connrefused --timeout=60 \
+              --user-agent="$UA" --referer="$REF" -O "$out" "$url"
+          }
+          try_download() {
+            out="$1"; url="$2"
+            set +e
+            download_wget "$out" "$url"; rc=$?
+            if [ $rc -ne 0 ]; then
+              for p in "${proxies[@]}"; do
+                echo "Retry via proxy: $p"
+                HTTPS_PROXY="$p" HTTP_PROXY="$p" ALL_PROXY="$p" download_wget "$out" "$url"; rc=$?
+                [ $rc -eq 0 ] && break
+              done
+            fi
+            set -e
+            if [ $rc -ne 0 ] || [ ! -s "$out" ]; then
+              echo "Failed to download $out" >&2; exit 1
+            fi
+          }
+          try_download pvz-release.zip "$URL_RELEASE"
+          try_download pvz-compatible.zip "$URL_COMP"
         shell: bash
 
       - name: Extract release and move PCKs
