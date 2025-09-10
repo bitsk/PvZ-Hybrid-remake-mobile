@@ -28,8 +28,8 @@ jobs:
       - name: Download v0.6.1 release archives (normal + GL)
         run: |
           set -e
-          curl -L --retry 5 --retry-delay 5 --fail --continue-at - -o pvz-release.zip "https://r2.182666.xyz/植物大战僵尸杂交版v0.6.1发布版.zip" --referer="https://pvzgame.app/"
-          curl -L --retry 5 --retry-delay 5 --fail --continue-at - -o pvz-compatible.zip "https://r2.182666.xyz/植物大战僵尸杂交版v0.6.1发布兼容版.zip" --referer="https://pvzgame.app/"
+          curl -L --retry 5 --retry-delay 5 --fail --continue-at - -H "Referer: https://pvzgame.app/" -o pvz-release.zip "https://r2.182666.xyz/植物大战僵尸杂交版v0.6.1发布版.zip"
+          curl -L --retry 5 --retry-delay 5 --fail --continue-at - -H "Referer: https://pvzgame.app/" -o pvz-compatible.zip "https://r2.182666.xyz/植物大战僵尸杂交版v0.6.1发布兼容版.zip"
         shell: bash
 
       - name: Extract release and move PCKs
