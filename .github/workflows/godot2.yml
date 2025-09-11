@@ -193,7 +193,7 @@ jobs:
               cp ./${pack_file} "$workdir/opt/apps/com.pvzhe.hybrid-remake/files/${pack_file}"
               # 构建 deb
               dpkg-deb -b "$workdir"
-              out_name="com.pvzhe.hybrid-remake_${APP_VER}_${arch}"
+              out_name="pvzhe-hybrid_${APP_VER}_${arch}"
               if [ "$flavor" = "_gl" ]; then out_name="${out_name}_gl"; fi
               mv ${workdir}.deb ${out_name}.deb
               mv ${out_name}.deb releases/
