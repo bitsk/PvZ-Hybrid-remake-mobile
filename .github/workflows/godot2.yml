@@ -174,6 +174,11 @@ jobs:
               sed -i s@VERSION@$APP_VER@g "$workdir/opt/apps/com.pvzhe.hybrid-remake/info"
               sed -i s@ARCH@${arch}@g "$workdir/DEBIAN/control"
               sed -i s@ARCH@${arch}@g "$workdir/opt/apps/com.pvzhe.hybrid-remake/info"
+              # 安装desktop到桌面
+              cp assets/deb/postinst "$workdir/DEBIAN/postinst"
+              cp assets/deb/postrm "$workdir/DEBIAN/postrm"
+              chmod +x "$workdir/DEBIAN/postinst"
+              chmod +x "$workdir/DEBIAN/postrm"
               # 复制资源与桌面文件
               cp assets/deb/com.pvzhe.hybrid-remake.png "$workdir/usr/share/icons/hicolor/128x128/apps"
               cp assets/deb/com.pvzhe.hybrid-remake.desktop "$workdir/usr/share/applications"

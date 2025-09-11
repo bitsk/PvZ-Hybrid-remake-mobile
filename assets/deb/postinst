@@ -1,0 +1,23 @@
+#!/bin/sh
+set -e
+
+APP_DESKTOP=/usr/share/applications/com.pvzhe.hybrid-remake.desktop
+ICON_DIR=/usr/share/icons/hicolor
+
+# 刷新数据库
+command -v update-desktop-database >/dev/null 2>&1 && update-desktop-database -q || true
+command -v gtk-update-icon-cache >/dev/null 2>&1 && gtk-update-icon-cache -f -q "$ICON_DIR" || true
+
+# 创建桌面快捷方式
+for u in $(getent passwd | awk -F: '$3>=1000 && $3<65534 {print $1}'); do
+  home=$(getent passwd "$u" | cut -d: -f6)
+  [ -d "$home" ] || continue
+  desktop_dir=$(su -l "$u" -c 'xdg-user-dir DESKTOP 2>/dev/null || echo "$HOME/Desktop"')
+  [ -n "$desktop_dir" ] || desktop_dir="$home/Desktop"
+  mkdir -p "$desktop_dir"
+  cp -f "$APP_DESKTOP" "$desktop_dir/com.pvzhe.hybrid-remake.desktop"
+  chown "$u":"$u" "$desktop_dir/com.pvzhe.hybrid-remake.desktop"
+  chmod +x "$desktop_dir/com.pvzhe.hybrid-remake.desktop"
+done
+
+exit 0

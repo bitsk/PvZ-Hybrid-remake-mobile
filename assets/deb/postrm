@@ -1,0 +1,11 @@
+#!/bin/sh
+set -e
+if [ "$1" = "purge" ] || [ "$1" = "remove" ]; then
+  for u in $(getent passwd | awk -F: '$3>=1000 && $3<65534 {print $1}'); do
+    home=$(getent passwd "$u" | cut -d: -f6)
+    [ -d "$home" ] || continue
+    desktop_dir=$(su -l "$u" -c 'xdg-user-dir DESKTOP 2>/dev/null || echo "$HOME/Desktop"')
+    rm -f "$desktop_dir/com.pvzhe.hybrid-remake.desktop" || true
+  done
+fi
+exit 0
