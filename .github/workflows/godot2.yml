@@ -165,8 +165,8 @@ jobs:
               rm -rf "$workdir"
               mkdir -p "$workdir/DEBIAN"
               mkdir -p "$workdir/opt/apps/com.pvzhe.hybrid-remake/files"
-              mkdir -p "$workdir/opt/apps/com.pvzhe.hybrid-remake/entries/applications"
-              mkdir -p "$workdir/opt/apps/com.pvzhe.hybrid-remake/entries/icons/hicolor/128x128/apps"
+              mkdir -p "$workdir/usr/share/applications"
+              mkdir -p "$workdir/usr/share/icons/hicolor/128x128/apps"
               # control/info 基于模板复制后替换
               cp assets/deb/control "$workdir/DEBIAN/control"
               cp assets/deb/info "$workdir/opt/apps/com.pvzhe.hybrid-remake/info"
@@ -175,8 +175,8 @@ jobs:
               sed -i s@ARCH@${arch}@g "$workdir/DEBIAN/control"
               sed -i s@ARCH@${arch}@g "$workdir/opt/apps/com.pvzhe.hybrid-remake/info"
               # 复制资源与桌面文件
-              cp assets/deb/com.pvzhe.hybrid-remake.png "$workdir/opt/apps/com.pvzhe.hybrid-remake/entries/icons/hicolor/128x128/apps"
-              cp assets/deb/com.pvzhe.hybrid-remake.desktop "$workdir/opt/apps/com.pvzhe.hybrid-remake/entries/applications"
+              cp assets/deb/com.pvzhe.hybrid-remake.png "$workdir/usr/share/icons/hicolor/128x128/apps"
+              cp assets/deb/com.pvzhe.hybrid-remake.desktop "$workdir/usr/share/applications"
               # 复制运行脚本（使用 --main-pack 指定 PCK）
               cp assets/deb/run.sh "$workdir/opt/apps/com.pvzhe.hybrid-remake/files/run.sh"
               chmod +x "$workdir/opt/apps/com.pvzhe.hybrid-remake/files/run.sh"
