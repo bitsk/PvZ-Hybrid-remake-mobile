@@ -30,7 +30,7 @@ jobs:
           set -e
           REF='https://pvzgame.app/'
           UA='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122 Safari/537.36'
-          URL_RELEASE='https://r2.182666.xyz/植物大战僵尸杂交版v0.9.1发布版.zip'
+          URL_RELEASE='https://r2.182666.xyz/植物大战僵尸杂交版v0.9.1发布性能版.zip'
           URL_COMP='https://r2.182666.xyz/植物大战僵尸杂交版v0.9.1发布兼容版.zip'
           proxies=(
             'http://106.14.91.83:9080'
