@@ -194,8 +194,8 @@ jobs:
               # 构建 deb
               out_name="pvzhe-hybrid_${APP_VER}_${arch}"
               if [ "$flavor" = "_gl" ]; then out_name="${out_name}_gl"; fi
-              dpkg-deb -b -Znone "$workdir" ${out_name}.deb
-              # mv ${workdir}.deb ${out_name}.deb
+              dpkg-deb -b "$workdir"
+              mv ${workdir}.deb ${out_name}.deb
               mv ${out_name}.deb releases/
             done
           done
